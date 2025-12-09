@@ -99,7 +99,7 @@ services:
     ports:
       - "11438:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      - ollama_data:/root/.ollama2
     networks:
       - mired
 
