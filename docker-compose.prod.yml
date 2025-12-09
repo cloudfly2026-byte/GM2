@@ -5,12 +5,7 @@ services:
     build:
       context: /media/backup/server/GM2/backend
       dockerfile: Dockerfile
-    depends_on:
-      - kafka
-      - db
     restart: always
-    links:
-      - db:db
     volumes:
       - ./backend/documents:/app/documents
       - ./backend/firma_soporte:/app/firma_soporte
