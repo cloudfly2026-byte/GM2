@@ -129,6 +129,7 @@ services:
 
 volumes:
   persistent_develop:
+  ollama_data:
 
 networks:
   # Red interna SOLO para Kafka/Zoo/DB de dev
