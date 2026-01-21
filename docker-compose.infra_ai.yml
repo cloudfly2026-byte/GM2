@@ -334,6 +334,15 @@ volumes:
   portainer_data:
   backup:
 
+  n8n_data:
+  qdrant_data:
+  postgres_data:
+  portainer_data:
+  mongo_evolution_data:
+  evolution_instances:
+  chatwoot_storage:
+  persistent_master:
+
 networks:
   kafka-net:
     name: gm2_kafka-net
