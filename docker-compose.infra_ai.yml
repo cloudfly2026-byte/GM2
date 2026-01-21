@@ -263,7 +263,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - app-net
+      - mired
   
   evolution-api:
     image: evoapicloud/evolution-api:latest
@@ -276,7 +276,7 @@ services:
     volumes:
       - evolution_instances:/evolution/instances
     networks:
-      - app-net
+      - mired
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.eapi.rule=Host(`eapi.cloudfly.com.co`)"
@@ -303,7 +303,7 @@ services:
       - postgresql
       - redis
     networks:
-      - app-net
+      - mired
 
   chatwoot-worker:
     image: chatwoot/chatwoot:latest
@@ -325,7 +325,7 @@ services:
       - redis
       - chatwoot
     networks:
-      - app-net
+      - mired
 
 volumes:
   db_data:
