@@ -23,6 +23,9 @@ services:
     ports:
       - "181.205.220.123:80:80"
       - "181.205.220.123:443:443"
+
+      - "181.205.220.122:80:80"
+      - "181.205.220.122:443:443"
     command:
       - "--log.level=DEBUG"
       - "--api.dashboard=false"
@@ -107,8 +110,7 @@ services:
     image: phpmyadmin/phpmyadmin
     container_name: phpmyadmin
     restart: always
-    ports:
-      - 8000:80
+    
     environment:
       MYSQL_USER: root
       MYSQL_PASSWORD: widowmaker
@@ -120,8 +122,6 @@ services:
     image: confluentinc/cp-kafka:7.4.0
     container_name: kafka
     restart: always
-    ports:
-      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -137,8 +137,6 @@ services:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: zookeeper
     restart: always
-    ports:
-      - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -153,8 +151,6 @@ services:
     restart: always
     depends_on:
       - kafka
-    ports:
-      - "8081:8080"
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
@@ -186,6 +182,150 @@ services:
       - portainer_data:/data
     networks:
       - mired
+#ai
+
+  redis-insight:
+    build:
+      context: .
+      dockerfile: Dockerfile.redisinsight
+    image: redisinsight-custom
+    container_name: redis_insight
+    restart: always
+    ports:
+      - "8001:5540"
+    depends_on:
+      - redis
+    networks:
+      - mired
+
+  redis:
+    image: redis:latest
+    container_name: redis_server
+    restart: always
+    networks:
+      - mired
+    environment:
+      REDIS_PASSWORD: Elian2020#   # recuerda requirepass si quieres que sea efectivo
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: always
+    ports:
+      - "8075:6333"
+      - "8076:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__API_KEY: Elian2020#
+      QDRANT__SERVICE__READ_ONLY_API_KEY: Elian2020#
+    networks:
+      - mired
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8nserver.com
+    restart: always
+    environment:
+      - N8N_HOST=autobot.cloudfly.com.co
+      - N8N_PROTOCOL=https
+      - N8N_PORT=5678
+      - WEBHOOK_URL=https://autobot.cloudfly.com.co/
+      - N8N_EDITOR_BASE_URL=https://autobot.cloudfly.com.co
+      - NODE_ENV=production
+      - N8N_SECURE_COOKIE=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - qdrant
+      - redis
+      - postgresql
+      - evolution-api
+    networks:
+      - mired
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=Host(`autobot.cloudfly.com.co`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure"
+      - "traefik.http.routers.n8n.tls.certresolver=le"
+      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+
+  postgresql:
+    image: pgvector/pgvector:pg15
+    container_name: postgres_server
+    restart: always
+    environment:
+      POSTGRES_DB: chatbotdb
+      POSTGRES_USER: chatbot_user
+      POSTGRES_PASSWORD: chatbot_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-net
+  
+  evolution-api:
+    image: evoapicloud/evolution-api:latest
+    container_name: evolution_api
+    restart: always
+    ports:
+      - "8082:8080"  # Puerto para acceso local/desarrollo
+    env_file:
+      - .env
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks:
+      - app-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.eapi.rule=Host(`eapi.cloudfly.com.co`)"
+      - "traefik.http.routers.eapi.entrypoints=websecure"
+      - "traefik.http.routers.eapi.tls.certresolver=le"
+      - "traefik.http.services.eapi.loadbalancer.server.port=8080"
+
+  chatwoot:
+    image: chatwoot/chatwoot:latest
+    container_name: chatwoot
+    restart: always
+    command: /bin/sh -lc "bundle exec rails db:chatwoot_prepare && mkdir -p tmp/pids && bundle exec puma -C config/puma.rb"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chatwoot.rule=Host(`chatcenter.cloudfly.com.co`)"
+      - "traefik.http.routers.chatwoot.entrypoints=websecure"
+      - "traefik.http.routers.chatwoot.tls.certresolver=le"
+      - "traefik.http.services.chatwoot.loadbalancer.server.port=3000"
+    env_file:
+      - .env.chatwoot
+    volumes:
+      - chatwoot_storage:/app/storage
+    depends_on:
+      - postgresql
+      - redis
+    networks:
+      - app-net
+
+  chatwoot-worker:
+    image: chatwoot/chatwoot:latest
+    container_name: chatwoot_worker
+    restart: always
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    environment:
+      RAILS_ENV: production
+      SECRET_KEY_BASE: "44d4f95c1b13aa70fd34dd6453a121fd962d9c1b748b28f21ac36cd1f481714a"
+      FRONTEND_URL: "https://chatcenter.cloudfly.com.co"
+      ACTIVE_STORAGE_SERVICE: "local"
+      DATABASE_URL: "postgres://chatbot_user:chatbot_pass@postgresql:5432/chatwoot_production"
+      REDIS_URL: "redis://redis:6379/1"
+      DEFAULT_LOCALE: "es"
+    volumes:
+      - chatwoot_storage:/app/storage
+    depends_on:
+      - postgresql
+      - redis
+      - chatwoot
+    networks:
+      - app-net
 
 volumes:
   db_data:
