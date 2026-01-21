@@ -337,7 +337,6 @@ volumes:
   n8n_data:
   qdrant_data:
   postgres_data:
-  portainer_data:
   mongo_evolution_data:
   evolution_instances:
   chatwoot_storage:
