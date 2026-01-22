@@ -9,7 +9,7 @@ services:
     container_name: mysql_develop
     restart: always
     ports:
-      - "3307:3306"              # no choca con prod (3306)
+      - "3306:3306"              # no choca con prod (3306)
     environment:
       MYSQL_DATABASE: GM2_develop
       MYSQL_ROOT_PASSWORD: widowmaker
