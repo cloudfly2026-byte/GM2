@@ -8,26 +8,29 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     icon: 'tabler-smart-home'
   },
   {
-    label: 'Ventas',
-    href: '/ventas',
-    icon: 'tabler-info-circle',
-    children:[
-      {
-      label: 'Pedidos',
-      href: '/ventas',
-      icon: 'tabler-info-circle',
-      }
-    ]
+    label: 'Equipos Médicos',
+    href: '/equipos',
+    icon: 'tabler-stethoscope'
   },
   {
-    label: 'Nomina',
-    href: '/nomina',
-    icon: 'tabler-info-circle'
+    label: 'Mantenimientos',
+    href: '/mantenimientos',
+    icon: 'tabler-tool'
+  },
+  {
+    label: 'Calibraciones',
+    href: '/calibraciones',
+    icon: 'tabler-adjustments-alt'
+  },
+  {
+    label: 'Instituciones',
+    href: '/instituciones',
+    icon: 'tabler-building-hospital'
   },
   {
     label: 'Reportes',
     href: '/reportes',
-    icon: 'tabler-info-circle'
+    icon: 'tabler-report'
   }
 ]
 

@@ -56,9 +56,7 @@ services:
   #  BACKEND SPRING DESARROLLO
   # ================================
   backend-spring_develop:
-    build:
-      context: /media/backup/server/GM2/backend
-      dockerfile: Dockerfile
+    image: ghcr.io/cloudfly2026-byte/gm2/backend-spring:dev
     depends_on: 
       - db_develop
       - kafka-dev
@@ -108,12 +106,7 @@ services:
   # ================================
   gm2_develop:
     container_name: gm2_app_develop
-    build:
-      context: /media/backup/server/GM2/frontend
-      dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=https://apidev.equibiomedic.co
-        - NEXT_FRONTEND_URL=https://gm2dev.equibiomedic.co
+    image: ghcr.io/cloudfly2026-byte/gm2/frontend:dev
     environment:
       - NEXT_PUBLIC_API_URL=https://apidev.equibiomedic.co
       - NEXT_FRONTEND_URL=https://gm2dev.equibiomedic.co
