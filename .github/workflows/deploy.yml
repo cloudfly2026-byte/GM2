@@ -130,6 +130,8 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.prod.yml pull
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.prod.yml stop backend-spring gm2_www || true
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.prod.yml rm -f backend-spring gm2_www || true
             echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.prod.yml up -d
             
             echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker system prune -f

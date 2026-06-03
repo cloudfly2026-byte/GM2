@@ -121,8 +121,9 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.develop.yml pull
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.develop.yml stop backend-spring_develop gm2_develop || true
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.develop.yml rm -f backend-spring_develop gm2_develop || true
             echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.develop.yml up -d
-            
             echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker system prune -f
 
       - name: Send notification email (dev)
