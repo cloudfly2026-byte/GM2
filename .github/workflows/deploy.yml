@@ -106,34 +106,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Add SSH private key to agent
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSHKEY }}
-
-      - name: Add Server to known hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -p 5434 181.205.220.123 >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-
       - name: Copy docker-compose files to VPS
-        run: |
-          scp -o StrictHostKeyChecking=no -P 5434 docker-compose.prod.yml server@181.205.220.123:/media/backup/server/GM2/
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: '181.205.220.123'
+          username: 'server'
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 5434
+          source: "docker-compose.prod.yml"
+          target: "/media/backup/server/GM2/"
 
       - name: Deploy PROD to server
-        run: |
-          ssh -o StrictHostKeyChecking=no -p 5434 server@181.205.220.123 << 'EOF'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: '181.205.220.123'
+          username: 'server'
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 5434
+          script: |
             cd /media/backup/server/GM2/ || exit 1
 
             # Log into ghcr.io to pull private images
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            echo '${{ secrets.SUDO_PASSWORD }}' | sudo -S docker-compose -f docker-compose.prod.yml pull
-            echo '${{ secrets.SUDO_PASSWORD }}' | sudo -S docker-compose -f docker-compose.prod.yml up -d
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.prod.yml pull
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.prod.yml up -d
             
-            echo '${{ secrets.SUDO_PASSWORD }}' | sudo -S docker system prune -f
-          EOF
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker system prune -f
 
       - name: Send notification email (prod)
         uses: dawidd6/action-send-mail@v3
