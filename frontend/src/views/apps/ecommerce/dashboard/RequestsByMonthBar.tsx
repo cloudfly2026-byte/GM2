@@ -42,7 +42,7 @@ const RequestsByMonthBar = () => {
         const res = await axiosInstance.get<MonthlyCount[]>('/solicitudes/por-mes', { params: { year } })
         const counts = new Array(12).fill(0)
         res.data.forEach(item => {
-          if (item && item.month >= 1 && item.month <= 12) counts[item.month - 1] = Number(item.total) || 0
+          if (item && item.month >= 1 && item.month <= 12) counts[item.month - 1] = Math.round(Number(item.total) || 0)
         })
         setData(counts)
       } catch (err) {
@@ -80,11 +80,17 @@ const RequestsByMonthBar = () => {
     },
     yaxis: {
       labels: {
+        formatter: (val: number) => String(Math.round(val)),
         style: {
           colors: 'var(--mui-palette-text-disabled)',
           fontFamily: theme.typography.fontFamily,
           fontSize: theme.typography.body2.fontSize as string
         }
+      }
+    },
+    tooltip: {
+      y: {
+        formatter: (val: number) => String(Math.round(val))
       }
     },
     plotOptions: {
