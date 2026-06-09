@@ -19,6 +19,7 @@ public class ProductoRequest {
     private String voltage;
     private String origin;
     private String invimaRegister;
+    private String datosMetrologicos;
     private String status;
     private Long customer;
     private String classification;

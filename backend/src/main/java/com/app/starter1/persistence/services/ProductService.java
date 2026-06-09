@@ -114,6 +114,7 @@ public class ProductService {
         if (updatedProduct.getWarrantyStartDate() != null) existingProduct.setWarrantyStartDate(updatedProduct.getWarrantyStartDate());
         if (updatedProduct.getWarrantyEndDate() != null) existingProduct.setWarrantyEndDate(updatedProduct.getWarrantyEndDate());
         if (updatedProduct.getManual() != null) existingProduct.setManual(updatedProduct.getManual());
+        if (updatedProduct.getDatosMetrologicos() != null) existingProduct.setDatosMetrologicos(updatedProduct.getDatosMetrologicos());
         if (updatedProduct.getPeriodicity() != null) existingProduct.setPeriodicity(updatedProduct.getPeriodicity());
         if (updatedProduct.getLocation() != null) existingProduct.setLocation(updatedProduct.getLocation());
         if (updatedProduct.getPlacement() != null) existingProduct.setPlacement(updatedProduct.getPlacement());

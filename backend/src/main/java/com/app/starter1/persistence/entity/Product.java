@@ -81,6 +81,9 @@ public class Product {
     @Column(name = "amperios_producto")
     private String amperage;
 
+    @Column(name = "datos_metrologicos_producto")
+    private String datosMetrologicos;
+
     @Column(name = "fecha_compra_producto")
     private LocalDate purchaseDate;
 
