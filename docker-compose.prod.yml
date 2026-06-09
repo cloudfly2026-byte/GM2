@@ -15,7 +15,7 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       DB_HOST: db
       DB_PORT: 3306
-      DB_DATABASE: gm2
+      DB_DATABASE: GM2
       DB_USERNAME: root
       DB_PASSWORD: widowmaker
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/gm2?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Bogota
