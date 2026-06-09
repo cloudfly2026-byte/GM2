@@ -58,7 +58,7 @@ const RequestsByMonthBar = () => {
 
   const options: ApexOptions = {
     chart: { parentHeightOffset: 0, toolbar: { show: false } },
-    tooltip: { enabled: true },
+    tooltip: { enabled: true, y: { formatter: (val: number) => String(Math.round(val)) } },
     dataLabels: { enabled: false },
     colors: ['var(--mui-palette-primary-main)'],
     grid: {
@@ -88,11 +88,7 @@ const RequestsByMonthBar = () => {
         }
       }
     },
-    tooltip: {
-      y: {
-        formatter: (val: number) => String(Math.round(val))
-      }
-    },
+    
     plotOptions: {
       bar: { borderRadius: 6, columnWidth: '40%' }
     }
