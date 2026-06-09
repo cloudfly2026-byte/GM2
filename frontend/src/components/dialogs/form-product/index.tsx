@@ -60,6 +60,7 @@ const schema = yup.object().shape({
   warrantyEndDate: yup.string().required('La fecha de fin de garantía es obligatoria'),
   manual: yup.string().required('El manual es obligatorio'),
   periodicity: yup.string().notOneOf(['0'], 'La periodicidad es obligatoria'),
+  datosMetrologicos: yup.string().notRequired(),
   location: yup.string().required('La ubicación es obligatoria'),
   placement: yup.string().required('La colocación es obligatoria'),
   image: yup.string().notRequired()
@@ -101,6 +102,7 @@ const ProductForm = ({ open, onClose, rowSelect }: any) => {
     warrantyStartDate: '',
     warrantyEndDate: '',
     manual: '',
+    datosMetrologicos: '',
     periodicity: '0',
     location: '',
     placement: ''
@@ -181,6 +183,7 @@ const ProductForm = ({ open, onClose, rowSelect }: any) => {
       warrantyStartDate: '',
       warrantyEndDate: '',
       manual: '',
+      datosMetrologicos: '',
       periodicity: '0',
       location: '',
       placement: ''
@@ -273,6 +276,7 @@ const ProductForm = ({ open, onClose, rowSelect }: any) => {
       setValue('warrantyStartDate', '')
       setValue('warrantyEndDate', '')
       setValue('manual', '')
+      setValue('datosMetrologicos', '')
       setValue('periodicity', '0')
       setValue('location', '')
       setValue('placement', '')
@@ -305,6 +309,7 @@ const ProductForm = ({ open, onClose, rowSelect }: any) => {
         warrantyStartDate: '',
         warrantyEndDate: '',
         manual: '',
+        datosMetrologicos: '',
         periodicity: '0',
         location: '',
         placement: ''
@@ -347,6 +352,7 @@ const ProductForm = ({ open, onClose, rowSelect }: any) => {
       setValue('warrantyStartDate', rowSelect.warrantyStartDate)
       setValue('warrantyEndDate', rowSelect.warrantyEndDate)
       setValue('manual', rowSelect.manual)
+      setValue('datosMetrologicos', rowSelect.datosMetrologicos)
       setValue('periodicity', rowSelect.periodicity)
       setValue('location', rowSelect.location)
       setValue('placement', rowSelect.placement)
@@ -378,6 +384,7 @@ const ProductForm = ({ open, onClose, rowSelect }: any) => {
       setValue('warrantyStartDate', '')
       setValue('warrantyEndDate', '')
       setValue('manual', '')
+      setValue('datosMetrologicos', '')
       setValue('periodicity', '0')
       setValue('location', '')
       setValue('placement', '')
@@ -478,6 +485,7 @@ const ProductForm = ({ open, onClose, rowSelect }: any) => {
     setValue('warrantyStartDate', '')
     setValue('warrantyEndDate', '')
     setValue('manual', '')
+    setValue('datosMetrologicos', '')
     setValue('periodicity', '0')
     setValue('location', '')
     setValue('placement', '')
@@ -725,6 +733,26 @@ const ProductForm = ({ open, onClose, rowSelect }: any) => {
                           label='Clasificación del riesgo'
                           error={Boolean(errors.origin)}
                           helperText={errors.origin?.message}
+                        />
+                      )}
+                    />
+                  </Grid>
+                </Grid>
+
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid item xs={12}>
+                    <Controller
+                      name='datosMetrologicos'
+                      control={control}
+                      render={({ field }) => (
+                        <CustomTextField
+                          {...field}
+                          fullWidth
+                          multiline
+                          rows={4}
+                          label='Datos metrológicos'
+                          error={Boolean(errors.datosMetrologicos)}
+                          helperText={errors.datosMetrologicos?.message}
                         />
                       )}
                     />

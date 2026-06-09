@@ -142,6 +142,7 @@ public class ProductController {
                 .purchaseDate(LocalDate.parse(productoRequest.getPurchaseDate()))
                 .amperage(productoRequest.getAmperage())
                 .frequency(productoRequest.getFrequency())
+                .datosMetrologicos(productoRequest.getDatosMetrologicos())
                 .power(productoRequest.getPower())
                 .voltage(productoRequest.getVoltage())
                 .origin(productoRequest.getOrigin())
