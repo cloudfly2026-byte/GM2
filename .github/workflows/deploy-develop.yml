@@ -1,51 +1,140 @@
-name: Deploy GM2 Develop
+name: CI/CD Develop Deploy
 
 on:
   push:
     branches:
-      - develop
+      - desarrollo
 
 jobs:
-  deploy-develop:
+  detect-changes:
+    name: Detect Service Changes
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+    outputs:
+      backend-spring: ${{ steps.filter.outputs.backend-spring }}
+      frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Add SSH private key to agent
-        uses: webfactory/ssh-agent@v0.5.3
+      - name: Check path filters
+        uses: dorny/paths-filter@v3
+        id: filter
         with:
-          ssh-private-key: ${{ secrets.SSHKEY }}
+          filters: |
+            backend-spring:
+              - 'backend/**'
+              - '.github/workflows/deploy-develop.yml'
+              - 'docker-compose.develop.yml'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/deploy-develop.yml'
+              - 'docker-compose.develop.yml'
 
-      - name: Add GitHub to known hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
+  build-and-push:
+    name: Build & Push Microservices (DEV)
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: backend-spring
+            context: ./backend
+            file: ./backend/Dockerfile
+            key: backend-spring
+          - name: frontend
+            context: ./frontend
+            file: ./frontend/Dockerfile
+            key: frontend
+    steps:
+      - name: Checkout repository
+        if: ${{ needs.detect-changes.outputs[matrix.service.key] == 'true' }}
+        uses: actions/checkout@v4
 
-      - name: Deploy DEVELOP stack to server
-        run: |
-          ssh -o StrictHostKeyChecking=no -p 5434 server@181.205.220.123 << 'EOF'
+      - name: Set up Docker Buildx
+        if: ${{ needs.detect-changes.outputs[matrix.service.key] == 'true' }}
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: ${{ needs.detect-changes.outputs[matrix.service.key] == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Downcase repository owner
+        if: ${{ needs.detect-changes.outputs[matrix.service.key] == 'true' }}
+        id: repository_owner
+        run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        if: ${{ needs.detect-changes.outputs[matrix.service.key] == 'true' }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.file }}
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL || vars.NEXT_PUBLIC_API_URL || 'https://apidev.equibiomedic.co' }}
+            NEXT_FRONTEND_URL=${{ secrets.NEXT_FRONTEND_URL || vars.NEXT_FRONTEND_URL || 'https://gm2dev.equibiomedic.co' }}
+          tags: |
+            ghcr.io/${{ steps.repository_owner.outputs.owner }}/gm2/${{ matrix.service.name }}:dev
+            ghcr.io/${{ steps.repository_owner.outputs.owner }}/gm2/${{ matrix.service.name }}:dev-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: VPS Deploy (DEV)
+    needs: [detect-changes, build-and-push]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: '181.205.220.123'
+          username: 'server'
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 5434
+          source: "docker-compose.develop.yml"
+          target: "/media/backup/server/GM2/"
+
+      - name: Deploy DEV to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: '181.205.220.123'
+          username: 'server'
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 5434
+          script: |
             cd /media/backup/server/GM2/ || exit 1
-            git switch develop
-            git pull
 
-            # Solo tocamos los servicios de DESARROLLO
-            echo '${{ secrets.SUDO_PASSWORD }}' | sudo -S docker-compose -f docker-compose.develop.yml down
-            echo '${{ secrets.SUDO_PASSWORD }}' | sudo -S docker-compose -f docker-compose.develop.yml up -d --build
-            echo '${{ secrets.SUDO_PASSWORD }}' | sudo -S docker system prune -f
-          EOF
+            # Log into ghcr.io to pull private images
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Send notification email (develop)
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.develop.yml pull
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.develop.yml stop backend-spring_develop gm2_develop || true
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.develop.yml rm -f backend-spring_develop gm2_develop || true
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker-compose -f docker-compose.develop.yml up -d
+            echo '${{ secrets.VPS_PASSWORD }}' | sudo -S docker system prune -f
+
+      - name: Send notification email (dev)
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: mail.tornillosprotor.com
           server_port: 465
           username: pruebas@tornillosprotor.com
           password: Elian2020#
-          subject: "Deploy GM2 - DEVELOP"
+          subject: "Deploy GM2 - DESARROLLO"
           to: egbmaster2007@gmail.com
           from: pruebas@tornillosprotor.com
-          body: "¡Se ha desplegado la rama DEVELOP de GM2 correctamente!"
+          body: "¡Se ha desplegado la actualización de DESARROLLO de GM2 correctamente!"
           secure: true

@@ -2,9 +2,7 @@ version: "3.9"
 
 services:
   backend-spring:
-    build:
-      context: /media/backup/server/GM2/backend
-      dockerfile: Dockerfile
+    image: ghcr.io/cloudfly2026-byte/gm2/backend-spring:latest
     restart: always
     volumes:
       - ./backend/documents:/app/documents
@@ -17,9 +15,13 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       DB_HOST: db
       DB_PORT: 3306
-      DB_DATABASE: GM2
+      DB_DATABASE: gm2
       DB_USERNAME: root
       DB_PASSWORD: widowmaker
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/gm2?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Bogota
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: widowmaker
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
       NEXT_FRONTEND_URL: https://gm2.equibiomedic.co
       CORS_ALLOWED_ORIGIN: https://gm2.equibiomedic.co
     networks:
@@ -34,12 +36,7 @@ services:
 
   gm2:
     container_name: gm2_app
-    build:
-      context: /media/backup/server/GM2/frontend
-      dockerfile: Dockerfile
-      args:
-      - NEXT_PUBLIC_API_URL=https://api.equibiomedic.co
-      - NEXT_FRONTEND_URL=https://gm2.equibiomedic.co
+    image: ghcr.io/cloudfly2026-byte/gm2/frontend:latest
     ports:
       - "3000:3000"
     restart: always

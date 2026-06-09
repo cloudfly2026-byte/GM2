@@ -56,9 +56,7 @@ services:
   #  BACKEND SPRING DESARROLLO
   # ================================
   backend-spring_develop:
-    build:
-      context: /media/backup/server/GM2/backend
-      dockerfile: Dockerfile
+    image: ghcr.io/cloudfly2026-byte/gm2/backend-spring:dev
     depends_on: 
       - db_develop
       - kafka-dev
@@ -71,6 +69,10 @@ services:
       DB_DATABASE: GM2_develop
       DB_USERNAME: root
       DB_PASSWORD: widowmaker
+      SPRING_DATASOURCE_URL: jdbc:mysql://db_develop:3306/GM2_develop?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Bogota
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: widowmaker
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
       NEXT_FRONTEND_URL: https://gm2dev.equibiomedic.co
       CORS_ALLOWED_ORIGIN: http://localhost:3000,https://gm2dev.equibiomedic.co
       SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 200MB
@@ -108,12 +110,7 @@ services:
   # ================================
   gm2_develop:
     container_name: gm2_app_develop
-    build:
-      context: /media/backup/server/GM2/frontend
-      dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=https://apidev.equibiomedic.co
-        - NEXT_FRONTEND_URL=https://gm2dev.equibiomedic.co
+    image: ghcr.io/cloudfly2026-byte/gm2/frontend:dev
     environment:
       - NEXT_PUBLIC_API_URL=https://apidev.equibiomedic.co
       - NEXT_FRONTEND_URL=https://gm2dev.equibiomedic.co
