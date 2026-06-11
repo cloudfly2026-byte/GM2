@@ -177,6 +177,13 @@ const ProductViewLayout = () => {
             </Typography>
               </Grid>
 
+              <Grid item xs={12}>
+                <Typography>
+                  <strong>Datos metrológicos:</strong>
+                </Typography>
+                <Typography sx={{ whiteSpace: 'pre-wrap' }}>{product.datosMetrologicos}</Typography>
+              </Grid>
+
 
               </Grid>
 

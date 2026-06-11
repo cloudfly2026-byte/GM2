@@ -11,6 +11,7 @@ services:
     ports:
       - "3306:3306"              # no choca con prod (3306)
     environment:
+      DB_USERNAME: root
       MYSQL_DATABASE: GM2_develop
       MYSQL_ROOT_PASSWORD: widowmaker
     volumes:

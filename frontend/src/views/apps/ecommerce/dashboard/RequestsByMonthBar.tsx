@@ -42,7 +42,7 @@ const RequestsByMonthBar = () => {
         const res = await axiosInstance.get<MonthlyCount[]>('/solicitudes/por-mes', { params: { year } })
         const counts = new Array(12).fill(0)
         res.data.forEach(item => {
-          if (item && item.month >= 1 && item.month <= 12) counts[item.month - 1] = Number(item.total) || 0
+          if (item && item.month >= 1 && item.month <= 12) counts[item.month - 1] = Math.round(Number(item.total) || 0)
         })
         setData(counts)
       } catch (err) {
@@ -58,7 +58,7 @@ const RequestsByMonthBar = () => {
 
   const options: ApexOptions = {
     chart: { parentHeightOffset: 0, toolbar: { show: false } },
-    tooltip: { enabled: true },
+    tooltip: { enabled: true, y: { formatter: (val: number) => String(Math.round(val)) } },
     dataLabels: { enabled: false },
     colors: ['var(--mui-palette-primary-main)'],
     grid: {
@@ -80,6 +80,7 @@ const RequestsByMonthBar = () => {
     },
     yaxis: {
       labels: {
+        formatter: (val: number) => String(Math.round(val)),
         style: {
           colors: 'var(--mui-palette-text-disabled)',
           fontFamily: theme.typography.fontFamily,
@@ -87,6 +88,7 @@ const RequestsByMonthBar = () => {
         }
       }
     },
+    
     plotOptions: {
       bar: { borderRadius: 6, columnWidth: '40%' }
     }
