@@ -13,13 +13,22 @@ import Logo from '@components/layout/shared/Logo'
 import Link from '@components/Link'
 
 
+// Next Imports
+import { useRouter } from 'next/navigation'
+
 // Styled Component Imports
 import AuthIllustrationWrapper from './AuthIllustrationWrapper'
 import { userMethods } from '@/utils/userMethods'
+import { AuthManager } from '@/utils/authManager'
 
 const VerifyEmailV1 = () => {
+  const router = useRouter()
+  const userLogin = userMethods.getUserLogin() || { nombres: '', email: '' };
 
-  const userLogin = userMethods.getUserLogin();
+  const handleAcceder = () => {
+    AuthManager.logout()
+    router.push('/login')
+  }
 
   return (
     <AuthIllustrationWrapper>
@@ -36,11 +45,9 @@ const VerifyEmailV1 = () => {
               para activar tu cuenta.
             </Typography>
           </div>
-          <Link href='/login' passHref>
-            <Button fullWidth variant='contained' className='mbe-6'>
-              Acceder
-            </Button>
-          </Link>
+          <Button fullWidth variant='contained' className='mbe-6' onClick={handleAcceder}>
+            Acceder
+          </Button>
           {/* <div className='flex justify-center items-center flex-wrap gap-2'>
             <Typography>No llego el correo electronico?</Typography>
             <Typography color='primary' component={Link}>
