@@ -16,6 +16,12 @@ const LoginPage = () => {
       const userStr = localStorage.getItem('UserLogin')
       if (!userStr) return
       const user = JSON.parse(userStr)
+
+      if (user && user.verificationToken && user.verificationToken !== '') {
+        router.replace('/verify-email')
+        return
+      }
+
       const roles = user?.roles || []
       const hasRole = (role: string) => roles.some((r: any) => r.roleEnum === role)
 
