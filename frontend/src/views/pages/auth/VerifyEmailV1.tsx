@@ -25,8 +25,8 @@ const VerifyEmailV1 = () => {
   const router = useRouter()
   const userLogin = userMethods.getUserLogin() || { nombres: '', email: '' };
 
-  const handleAcceder = () => {
-    AuthManager.logout()
+  const handleAcceder = async () => {
+    await AuthManager.logout()
     router.push('/login')
   }
 
