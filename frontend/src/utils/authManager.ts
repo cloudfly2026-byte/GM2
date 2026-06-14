@@ -126,10 +126,26 @@ export const AuthManager = {
         return false
       }
 
+      const userStr = localStorage.getItem('UserLogin')
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr)
+          if (user && user.verificationToken && user.verificationToken !== '') {
+            console.error('Cuenta no activada')
+            location.href = '/verify-email'
+            return false
+          }
+        } catch (e) {
+          console.error('Error parseando UserLogin:', e)
+        }
+      }
+
       return true
     } catch (error) {
       console.error('Error durante la validación del token:', error)
-      throw error
+      localStorage.removeItem('AuthToken')
+      localStorage.removeItem('UserLogin')
+      location.href = '/login'
       return false
     }
   },

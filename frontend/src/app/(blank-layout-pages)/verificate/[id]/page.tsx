@@ -21,6 +21,8 @@ const VerficateEmailPage = () => {
       try {
         const result = await AuthManager.validateAccount({ validationToken: String(params.id) })
         console.log('Resultado de validación:', result)
+        localStorage.removeItem('AuthToken')
+        localStorage.removeItem('UserLogin')
       } catch (error) {
         console.error('Error en validación:', error)
       } finally {
