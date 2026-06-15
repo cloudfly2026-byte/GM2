@@ -244,6 +244,12 @@ const SolicitudForm = ({
     }
   })
 
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.log("Yup Validation Errors:", errors)
+    }
+  }, [errors])
+
   const onSubmit = async (data: any) => {
     try {
       const token = localStorage.getItem('AuthToken')
