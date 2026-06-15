@@ -101,35 +101,35 @@ public class SecurityConfig {
 
                     //plantillas
                     http.requestMatchers(HttpMethod.GET, "/plantillas/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL","USER");
-                    http.requestMatchers(HttpMethod.PUT, "/plantillas/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
-                    http.requestMatchers(HttpMethod.POST, "/plantillas/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
-                    http.requestMatchers(HttpMethod.DELETE, "/plantillas/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.PUT, "/plantillas/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.POST, "/plantillas/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.DELETE, "/plantillas/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
 
                     //reportes
                     http.requestMatchers(HttpMethod.GET, "/reportes/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL","USER");
-                    http.requestMatchers(HttpMethod.PUT, "/reportes/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
-                    http.requestMatchers(HttpMethod.POST, "/reportes/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
-                    http.requestMatchers(HttpMethod.DELETE, "/reportes/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.PUT, "/reportes/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.POST, "/reportes/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.DELETE, "/reportes/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
 
                     //checkeo
                     http.requestMatchers(HttpMethod.GET, "/checkeo/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL","USER");
-                    http.requestMatchers(HttpMethod.PUT, "/checkeo/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
-                    http.requestMatchers(HttpMethod.POST, "/checkeo/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
-                    http.requestMatchers(HttpMethod.DELETE, "/checkeo/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.PUT, "/checkeo/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.POST, "/checkeo/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.DELETE, "/checkeo/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
 
                     //schedule calendar
                     http.requestMatchers(HttpMethod.GET, "/schedule/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL","USER");
-                    http.requestMatchers(HttpMethod.PUT, "/schedule/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
-                    http.requestMatchers(HttpMethod.POST, "/schedule/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
-                    http.requestMatchers(HttpMethod.DELETE, "/schedule/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.PUT, "/schedule/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.POST, "/schedule/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.DELETE, "/schedule/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
 
 
                     //plantilla verficacion
 
                     http.requestMatchers(HttpMethod.GET, "/plantillas-verificacion/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL","USER");
-                    http.requestMatchers(HttpMethod.PUT, "/plantillas-verificacion/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
-                    http.requestMatchers(HttpMethod.POST, "/plantillas-verificacion/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
-                    http.requestMatchers(HttpMethod.DELETE, "/plantillas-verificacion/**").hasAnyRole("SUPERADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.PUT, "/plantillas-verificacion/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.POST, "/plantillas-verificacion/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.DELETE, "/plantillas-verificacion/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
 
                     // dashboard overview (lectura)
                     http.requestMatchers(HttpMethod.GET, "/dashboard/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL","USER");
