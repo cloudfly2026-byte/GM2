@@ -261,8 +261,8 @@ public class SolicitudService {
         return solicitud;
     }
 
-    public List<MonthlyCount> getMonthlyCounts(int year){
-        return solicitudRepository.countByMonth(year);
+    public List<MonthlyCount> getMonthlyCounts(int year, Long customerId){
+        return solicitudRepository.countByMonth(year, customerId);
     }
 
     public List<SolicitudResponseDTO> getSolicitudesEnProcesoPorUsuario(Long idUsuario) {
@@ -307,7 +307,7 @@ public class SolicitudService {
                 .toList();
     }
 
-    public List<StatusCount> getStatusCountsInMonth(int year, int month){
-        return solicitudRepository.countByStatusInMonth(year, month);
+    public List<StatusCount> getStatusCountsInMonth(int year, int month, Long customerId){
+        return solicitudRepository.countByStatusInMonth(year, month, customerId);
     }
 }

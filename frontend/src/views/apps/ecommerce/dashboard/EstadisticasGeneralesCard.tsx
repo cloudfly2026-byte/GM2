@@ -14,6 +14,7 @@ import type { ThemeColor } from '@core/types'
 import CustomAvatar from '@core/components/mui/Avatar'
 import { useEffect, useState } from 'react'
 import axiosInstance from '@/utils/axiosInterceptor'
+import { userMethods } from '@/utils/userMethods'
 
 // Icons mapping
 const ICONS: Record<string, string> = {
@@ -47,7 +48,12 @@ const EstadisticasGenerales = () => {
     let active = true
     const fetchStats = async () => {
       try {
-        const res = await axiosInstance.get<OverviewStats>('/dashboard/overview')
+        const userLogin = userMethods.getUserLogin()
+        const params: any = {}
+        if (userLogin && !userMethods.isRole('SUPERADMIN') && userLogin.customer?.id) {
+          params.customerId = userLogin.customer.id
+        }
+        const res = await axiosInstance.get<OverviewStats>('/dashboard/overview', { params })
         if (!active) return
         setStats(res.data)
       } catch (e: any) {

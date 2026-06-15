@@ -34,17 +34,18 @@ public interface SolicitudRepository extends JpaRepository<Solicitud, Long> {
     @Query("SELECT s FROM Solicitud s WHERE s.equipo.id = :productId AND s.status.id = 3")
     List<Solicitud> findClosedRequestsByProductId(@Param("productId") Long productId);
 
-    long countByEquipoId(Long equipoId);
+    long countByCustomerId(Long customerId);
 
     // Conteo por mes del año especificado (asumiendo s.fecha formato 'YYYY-MM-DD' o 'YYYY/MM/DD' o 'YYYYMMDD')
     @Query(value = """
         SELECT MONTH(STR_TO_DATE(s.fecha, '%Y-%m-%d')) AS month, COUNT(*) AS total
         FROM solicitudes s
         WHERE YEAR(STR_TO_DATE(s.fecha, '%Y-%m-%d')) = :year
+          AND (:customerId IS NULL OR s.id_entidad = :customerId)
         GROUP BY MONTH(STR_TO_DATE(s.fecha, '%Y-%m-%d'))
         ORDER BY month
     """, nativeQuery = true)
-    List<MonthlyCount> countByMonth(@Param("year") int year);
+    List<MonthlyCount> countByMonth(@Param("year") int year, @Param("customerId") Long customerId);
 
     @Query(value = """
         SELECT es.desc_estado_sol AS status, COUNT(*) AS total
@@ -52,7 +53,8 @@ public interface SolicitudRepository extends JpaRepository<Solicitud, Long> {
         JOIN estado_solicitud es ON es.id_estado_sol = s.status
         WHERE YEAR(STR_TO_DATE(s.fecha, '%Y-%m-%d')) = :year
           AND MONTH(STR_TO_DATE(s.fecha, '%Y-%m-%d')) = :month
+          AND (:customerId IS NULL OR s.id_entidad = :customerId)
         GROUP BY es.desc_estado_sol
     """, nativeQuery = true)
-    List<StatusCount> countByStatusInMonth(@Param("year") int year, @Param("month") int month);
+    List<StatusCount> countByStatusInMonth(@Param("year") int year, @Param("month") int month, @Param("customerId") Long customerId);
 }
