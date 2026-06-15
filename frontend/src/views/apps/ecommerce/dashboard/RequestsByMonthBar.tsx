@@ -19,6 +19,7 @@ import type { ApexOptions } from 'apexcharts'
 
 // Utils
 import axiosInstance from '@/utils/axiosInterceptor'
+import { userMethods } from '@/utils/userMethods'
 
 // Styled Component Imports
 const AppReactApexCharts = dynamic(() => import('@/libs/styles/AppReactApexCharts'), { ssr: false })
@@ -39,7 +40,12 @@ const RequestsByMonthBar = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axiosInstance.get<MonthlyCount[]>('/solicitudes/por-mes', { params: { year } })
+        const userLogin = userMethods.getUserLogin()
+        const params: any = { year }
+        if (userLogin && !userMethods.isRole('SUPERADMIN') && userLogin.customer?.id) {
+          params.customerId = userLogin.customer.id
+        }
+        const res = await axiosInstance.get<MonthlyCount[]>('/solicitudes/por-mes', { params })
         const counts = new Array(12).fill(0)
         res.data.forEach(item => {
           if (item && item.month >= 1 && item.month <= 12) counts[item.month - 1] = Math.round(Number(item.total) || 0)

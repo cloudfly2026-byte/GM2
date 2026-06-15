@@ -17,6 +17,7 @@ import type { ApexOptions } from 'apexcharts'
 
 // Utils
 import axiosInstance from '@/utils/axiosInterceptor'
+import { userMethods } from '@/utils/userMethods'
 
 // Styled Component Imports
 const AppReactApexCharts = dynamic(() => import('@/libs/styles/AppReactApexCharts'))
@@ -35,7 +36,12 @@ const SolicitudesDonut = () => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const res = await axiosInstance.get<StatusCount[]>('/solicitudes/resumen-mensual', { params: { year, month } })
+        const userLogin = userMethods.getUserLogin()
+        const params: any = { year, month }
+        if (userLogin && !userMethods.isRole('SUPERADMIN') && userLogin.customer?.id) {
+          params.customerId = userLogin.customer.id
+        }
+        const res = await axiosInstance.get<StatusCount[]>('/solicitudes/resumen-mensual', { params })
         setData(res.data || [])
       } finally {
         setLoading(false)

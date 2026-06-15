@@ -110,9 +110,12 @@ public class SolicitudController {
     }
     
     @GetMapping("/por-mes")
-    public ResponseEntity<List<MonthlyCount>> getPorMes(@RequestParam(name = "year", required = false) Integer year){
+    public ResponseEntity<List<MonthlyCount>> getPorMes(
+            @RequestParam(name = "year", required = false) Integer year,
+            @RequestParam(name = "customerId", required = false) Long customerId
+    ){
         int y = (year != null) ? year : LocalDate.now().getYear();
-        return ResponseEntity.ok(solicitudService.getMonthlyCounts(y));
+        return ResponseEntity.ok(solicitudService.getMonthlyCounts(y, customerId));
     }
 
     @Transactional
@@ -130,10 +133,11 @@ public class SolicitudController {
     @GetMapping("/resumen-mensual")
     public ResponseEntity<List<StatusCount>> getResumenMensual(
             @RequestParam(name = "year", required = false) Integer year,
-            @RequestParam(name = "month", required = false) Integer month
+            @RequestParam(name = "month", required = false) Integer month,
+            @RequestParam(name = "customerId", required = false) Long customerId
     ){
         int y = (year != null) ? year : LocalDate.now().getYear();
         int m = (month != null) ? month : LocalDate.now().getMonthValue();
-        return ResponseEntity.ok(solicitudService.getStatusCountsInMonth(y, m));
+        return ResponseEntity.ok(solicitudService.getStatusCountsInMonth(y, m, customerId));
     }
 }
