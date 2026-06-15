@@ -51,6 +51,7 @@ public class SolicitudService {
                         .status(solicitud.getStatus() != null ? solicitud.getStatus() : null)
                         .entidad(solicitud.getCustomer() != null ? solicitud.getCustomer().getId() : null)
                         .tipoServicio(solicitud.getTypeService() != null ? solicitud.getTypeService().getId() : null)
+                        .reporte(reportRepository.findBySolicitud(solicitud.getIdSolicitud()))
                         .build())
                 .toList();
     }
@@ -330,6 +331,7 @@ public class SolicitudService {
                         .status(solicitud.getStatus() != null ? solicitud.getStatus() : null)
                         .entidad(solicitud.getCustomer() != null ? solicitud.getCustomer().getId() : null)
                         .tipoServicio(solicitud.getTypeService() != null ? solicitud.getTypeService().getId() : null)
+                        .reporte(reportRepository.findBySolicitud(solicitud.getIdSolicitud()))
                         .build())
                 .toList();
     }

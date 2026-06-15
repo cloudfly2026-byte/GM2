@@ -45,6 +45,7 @@ import Tooltip from '@mui/material/Tooltip'
 import CustomTextField from '@core/components/mui/TextField'
 
 import SolicitudForm from '@/components/dialogs/form-solicitud'
+import ReportViewver from '@/components/ReportViewver'
 
 // Component Imports
 import TableFilters from './TableFilters'
@@ -123,6 +124,8 @@ const SolicitudListTable = ({ reload, tableData }: any) => {
 
   const [loadForm, setOpenForm] = useState(false)
   const [loadFormPlanilla, setOpenFormPlanilla] = useState(false)
+  const [openReport, setOpenReport] = useState(false)
+  const [reportRow, setReportRow] = useState<any>(null)
 
   const [rowSelection, setRowSelection] = useState<any>({
     id: '',
@@ -297,6 +300,19 @@ const SolicitudListTable = ({ reload, tableData }: any) => {
 
 
           </Tooltip>
+          )}
+
+          {row.original.reporte && (
+            <Tooltip title="Ver reporte">
+              <IconButton
+                onClick={() => {
+                  setReportRow(row.original)
+                  setOpenReport(true)
+                }}
+              >
+                <i className='tabler-eye text-textSecondary' />
+              </IconButton>
+            </Tooltip>
           )}
           </div>
         ),
@@ -522,6 +538,14 @@ const SolicitudListTable = ({ reload, tableData }: any) => {
       name={rowSelection?.nombreTipoServicio}
 
       />
+
+      {openReport && (
+        <ReportViewver
+          open={openReport}
+          onClose={() => setOpenReport(false)}
+          rowSelect={reportRow}
+        />
+      )}
     </>
   )
 }
