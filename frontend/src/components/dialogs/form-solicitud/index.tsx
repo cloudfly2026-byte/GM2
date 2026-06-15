@@ -332,17 +332,17 @@ const SolicitudForm = ({
       const isClient = user && (userMethods.isRole('ADMIN') || userMethods.isRole('USER'))
       const clientCustomerId = isClient ? String(user.customer?.id || '0') : '0'
 
-      setValue('entidad', clientCustomerId)
-      setValue('fecha', '')
-
-      setValue('tipoServicio', '0')
-      setValue('descr', '')
-      setValue('asig', '0')
-      setValue('fchasg', '')
-      setValue('horasg', '')
+      reset({
+        entidad: clientCustomerId,
+        fecha: '',
+        tipoServicio: '0',
+        descr: '',
+        asig: '0',
+        fchasg: '',
+        horasg: ''
+      })
       setProductsList([])
 
-      reset()
       setId(null)
       setEditData({
         entidad: clientCustomerId,
