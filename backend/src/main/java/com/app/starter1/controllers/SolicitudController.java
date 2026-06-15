@@ -140,4 +140,11 @@ public class SolicitudController {
         int m = (month != null) ? month : LocalDate.now().getMonthValue();
         return ResponseEntity.ok(solicitudService.getStatusCountsInMonth(y, m, customerId));
     }
+
+    @Transactional
+    @GetMapping("/customer/{customerId}")
+    public ResponseEntity<List<SolicitudResponseDTO>> getSolicitudesByCustomer(@PathVariable Long customerId) {
+        List<SolicitudResponseDTO> solicitudes = solicitudService.getSolicitudesByCustomer(customerId);
+        return ResponseEntity.ok(solicitudes);
+    }
 }
