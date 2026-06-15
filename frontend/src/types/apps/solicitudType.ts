@@ -16,6 +16,7 @@ export interface SolicitudType {
   asig?:string
   fchasg?:string
   horasg?:string
+  reporte?: any
 }
 
 interface statusd {
