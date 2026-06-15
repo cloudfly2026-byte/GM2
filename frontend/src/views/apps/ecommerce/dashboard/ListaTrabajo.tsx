@@ -103,6 +103,12 @@ const ListaTrabajo = () => {
 
   const currentList = useMemo(() => items[value] || [], [items, value])
 
+  const isAuthorized = userMethods.isRole('SUPERADMIN') || userMethods.isRole('BIOMEDICAL')
+
+  if (!isAuthorized) {
+    return null
+  }
+
   return (
     <Card>
       <CardHeader
