@@ -36,6 +36,8 @@ public interface SolicitudRepository extends JpaRepository<Solicitud, Long> {
 
     long countByCustomerId(Long customerId);
 
+    List<Solicitud> findByCustomerId(Long customerId);
+
     // Conteo por mes del año especificado (asumiendo s.fecha formato 'YYYY-MM-DD' o 'YYYY/MM/DD' o 'YYYYMMDD')
     @Query(value = """
         SELECT MONTH(STR_TO_DATE(s.fecha, '%Y-%m-%d')) AS month, COUNT(*) AS total

@@ -328,7 +328,11 @@ const SolicitudForm = ({
       setSolicitudValues(rowSelect);
       setEditData(rowSelect)
     } else {
-      setValue('entidad', '0')
+      const user = userMethods.getUserLogin()
+      const isClient = user && (userMethods.isRole('ADMIN') || userMethods.isRole('USER'))
+      const clientCustomerId = isClient ? String(user.customer?.id || '0') : '0'
+
+      setValue('entidad', clientCustomerId)
       setValue('fecha', '')
 
       setValue('tipoServicio', '0')
@@ -341,7 +345,7 @@ const SolicitudForm = ({
       reset()
       setId(null)
       setEditData({
-        entidad: '0',
+        entidad: clientCustomerId,
         fecha: '',
 
         tipoServicio: '0',
@@ -350,6 +354,10 @@ const SolicitudForm = ({
         fchasg: '',
         horasg: ''
       })
+
+      if (isClient && user.customer?.id) {
+        fetchProducts(user.customer.id)
+      }
     }
   }, [rowSelect])
 

@@ -310,4 +310,27 @@ public class SolicitudService {
     public List<StatusCount> getStatusCountsInMonth(int year, int month, Long customerId){
         return solicitudRepository.countByStatusInMonth(year, month, customerId);
     }
+
+    public List<SolicitudResponseDTO> getSolicitudesByCustomer(Long customerId) {
+        List<Solicitud> solicitudes = solicitudRepository.findByCustomerId(customerId);
+
+        return solicitudes.stream()
+                .map(solicitud -> SolicitudResponseDTO.builder()
+                        .idSolicitud(solicitud.getIdSolicitud())
+                        .fecha(solicitud.getFecha())
+                        .hora(solicitud.getHora())
+                        .descripcion(solicitud.getDescription())
+                        .idTipoDevice(solicitud.getEquipo() != null ? solicitud.getEquipo().getProductType() : null)
+                        .idEquipo(solicitud.getEquipo() != null ? solicitud.getEquipo().getId() : null)
+                        .nombreEquipo(solicitud.getEquipo() != null ? solicitud.getEquipo().getProductName() : null)
+                        .nombreTipoServicio(solicitud.getTypeService() != null ? solicitud.getTypeService().getDescripcion() : null)
+                        .nombreEntidad(solicitud.getCustomer() != null ? solicitud.getCustomer().getName() : null)
+                        .nombreEstadoSolicitud(solicitud.getStatus() != null ? solicitud.getStatus().getDescripcion() : null)
+                        .asig(solicitud.getUsuarioAsignado() != null ? solicitud.getUsuarioAsignado() : null)
+                        .status(solicitud.getStatus() != null ? solicitud.getStatus() : null)
+                        .entidad(solicitud.getCustomer() != null ? solicitud.getCustomer().getId() : null)
+                        .tipoServicio(solicitud.getTypeService() != null ? solicitud.getTypeService().getId() : null)
+                        .build())
+                .toList();
+    }
 }
