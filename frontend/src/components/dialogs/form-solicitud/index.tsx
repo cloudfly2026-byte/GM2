@@ -329,7 +329,7 @@ const SolicitudForm = ({
       setEditData(rowSelect)
     } else {
       const user = userMethods.getUserLogin()
-      const isClient = user && (userMethods.isRole('ADMIN') || userMethods.isRole('USER'))
+      const isClient = user && !userMethods.isRole('SUPERADMIN')
       const clientCustomerId = isClient ? String(user.customer?.id || '0') : '0'
 
       reset({
@@ -370,7 +370,7 @@ const SolicitudForm = ({
             <Grid item xs={12} sm={6}>
               <h3>Información básica</h3>
 
-              {(userMethods.isRole('SUPERADMIN') || userMethods.isRole('BIOMEDICAL')) && <Controller
+              {userMethods.isRole('SUPERADMIN') && <Controller
                 name='entidad'
                 control={control}
                 render={({ field }) => (
