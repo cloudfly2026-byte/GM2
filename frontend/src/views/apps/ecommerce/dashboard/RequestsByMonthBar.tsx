@@ -85,6 +85,9 @@ const RequestsByMonthBar = () => {
       }
     },
     yaxis: {
+      min: 0,
+      max: 10,
+      tickAmount: 10,
       labels: {
         formatter: (val: number) => String(Math.round(val)),
         style: {
