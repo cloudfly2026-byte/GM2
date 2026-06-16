@@ -23,28 +23,22 @@ public class EmailService {
     @Autowired
     private Configuration freemarkerConfig;
 
-    public void sendEmail(NotificationMessage notification) {
-        try {
-            // Determinar el tipo de correo y cargar la plantilla correspondiente
-            String body = loadTemplate(notification);
+    public void sendEmail(NotificationMessage notification) throws Exception {
+        // Determinar el tipo de correo y cargar la plantilla correspondiente
+        String body = loadTemplate(notification);
 
-            // Crear un mensaje MimeMessage para enviar correo con HTML
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true); // true indica que el contenido es HTML
+        // Crear un mensaje MimeMessage para enviar correo con HTML
+        MimeMessage mimeMessage = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true); // true indica que el contenido es HTML
 
-            helper.setFrom("gm2@yunismedical.com");
-            helper.setTo(notification.getTo());
-            helper.setSubject(notification.getSubject());
-            helper.setText(body, true); // El segundo parámetro true indica que el cuerpo es HTML
+        helper.setFrom("gm2@yunismedical.com");
+        helper.setTo(notification.getTo());
+        helper.setSubject(notification.getSubject());
+        helper.setText(body, true); // El segundo parámetro true indica que el cuerpo es HTML
 
 
-            mailSender.send(mimeMessage);
-            System.out.println("Email sent successfully to: " + notification.getTo());
-
-        } catch (Exception e) {
-            System.err.println("Error while processing or sending email: " + e.getMessage());
-            e.printStackTrace();
-        }
+        mailSender.send(mimeMessage);
+        System.out.println("Email sent successfully to: " + notification.getTo());
     }
 
     private String loadTemplate(NotificationMessage notification) throws Exception {
