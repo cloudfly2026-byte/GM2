@@ -21,6 +21,7 @@ import type { AddEventType, CalendarColors, CalendarType } from '@/types/apps/ca
 
 // Slice Imports
 import { fetchEvents, selectedEvent, updateEvent } from '@/redux-store/slices/calendar'
+import { userMethods } from '@/utils/userMethods'
 
 type CalenderProps = {
   calendarStore: CalendarType
