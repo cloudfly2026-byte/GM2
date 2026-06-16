@@ -156,6 +156,11 @@ const Calendar = (props: CalenderProps) => {
 },
 
   async eventClick({ event: clickedEvent, jsEvent }: any) {
+      const isAuthorized = userMethods.isRole('SUPERADMIN') || userMethods.isRole('BIOMEDICAL')
+      if (!isAuthorized) {
+        alert("No tienes permisos para confirmar mantenimientos.")
+        return
+      }
       
       console.log("clickedEvent", clickedEvent.id)
 
