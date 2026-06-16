@@ -17,19 +17,14 @@ public class KafkaConsumerListener {
     private EmailService emailService; // Inyectar el servicio de correo
 
     @KafkaListener(topics = {"email-notifications"}, groupId = "email-service")
-    public void listener(String message) {
+    public void listener(String message) throws Exception {
         LOGGER.info("Received message: " + message);
 
-        try {
-            // Parsear el mensaje JSON a un objeto NotificationMessage
-            ObjectMapper objectMapper = new ObjectMapper();
-            NotificationMessage notification = objectMapper.readValue(message, NotificationMessage.class);
+        // Parsear el mensaje JSON a un objeto NotificationMessage
+        ObjectMapper objectMapper = new ObjectMapper();
+        NotificationMessage notification = objectMapper.readValue(message, NotificationMessage.class);
 
-            // Llamar al servicio para enviar el correo
-            emailService.sendEmail(notification);
-
-        } catch (Exception e) {
-            LOGGER.error("Error while processing or sending email: ", e);
-        }
+        // Llamar al servicio para enviar el correo
+        emailService.sendEmail(notification);
     }
 }
