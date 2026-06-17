@@ -10,6 +10,8 @@ services:
       MYSQL_DATABASE: ingenieriadb
       MYSQL_PASSWORD: widowmaker
       MYSQL_ROOT_PASSWORD: widowmaker
+    ports:
+      - "3307:3306"
     volumes:
       - persistent:/var/lib/mysql
     networks:

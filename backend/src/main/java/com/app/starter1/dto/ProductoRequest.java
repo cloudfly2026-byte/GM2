@@ -11,7 +11,7 @@ public class ProductoRequest {
     private String warrantyEndDate;
     private String warrantyStartDate;
     private String supplier;
-    private Integer bookValue;
+    private Long bookValue;
     private String purchaseDate;
     private String amperage;
     private String frequency;
