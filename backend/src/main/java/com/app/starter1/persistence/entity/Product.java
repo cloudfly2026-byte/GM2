@@ -88,7 +88,7 @@ public class Product {
     private LocalDate purchaseDate;
 
     @Column(name = "valor_contable_producto")
-    private Integer bookValue;
+    private Long bookValue;
 
     @Column(name = "proveedor_producto")
     private String supplier;

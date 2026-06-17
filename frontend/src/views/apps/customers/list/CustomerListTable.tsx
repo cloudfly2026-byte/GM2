@@ -11,6 +11,12 @@ import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
 import Checkbox from '@mui/material/Checkbox'
 import IconButton from '@mui/material/IconButton'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
+import axios from 'axios'
 
 import TablePagination from '@mui/material/TablePagination'
 import type { TextFieldProps } from '@mui/material/TextField'
@@ -137,6 +143,29 @@ const CustomersListTable = ({ reload, tableData }: any) => {
   const [filteredData, setFilteredData] = useState(data)
   const [globalFilter, setGlobalFilter] = useState('')
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [customerToDelete, setCustomerToDelete] = useState<any>(null)
+
+  const deleteCustomer = async (id: number | string) => {
+    try {
+      const token = localStorage.getItem('AuthToken')
+      if (!token) {
+        throw new Error('No token found')
+      }
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/customers/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+      if (reload) {
+        reload(true)
+      }
+    } catch (error) {
+      console.error('Error deleting customer:', error)
+    }
+  }
+
   const columns = useMemo<ColumnDef<CustomersTypeWithAction, any>[]>(
     () => [
       {
@@ -229,13 +258,10 @@ const CustomersListTable = ({ reload, tableData }: any) => {
         cell: ({ row }) => (
           <div className='flex items-center'>
             <IconButton
-              onClick={() =>
-                setData(
-                  data?.filter((product: any) => {
-                    return product.id !== row.original.id
-                  })
-                )
-              }
+              onClick={() => {
+                setCustomerToDelete(row.original)
+                setDeleteDialogOpen(true)
+              }}
             >
               <i className='tabler-trash text-textSecondary' />
             </IconButton>
@@ -460,6 +486,41 @@ const CustomersListTable = ({ reload, tableData }: any) => {
         setOpen={() => setOpenForm(true)}
         rowSelect={rowSelection}
       />
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        aria-labelledby='alert-dialog-title'
+        aria-describedby='alert-dialog-description'
+      >
+        <DialogTitle id='alert-dialog-title'>
+          {"¿Confirmar eliminación?"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id='alert-dialog-description'>
+            ¿Estás seguro de que deseas eliminar al cliente {customerToDelete?.name}? Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color='secondary'>
+            Cancelar
+          </Button>
+          <Button
+            onClick={async () => {
+              if (customerToDelete) {
+                await deleteCustomer(customerToDelete.id)
+                setDeleteDialogOpen(false)
+                setCustomerToDelete(null)
+              }
+            }}
+            color='error'
+            variant='contained'
+            autoFocus
+          >
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }

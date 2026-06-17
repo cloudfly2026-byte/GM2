@@ -53,7 +53,11 @@ const schema = yup.object().shape({
   frequency: yup.string().required('La frecuencia es obligatoria'),
   amperage: yup.string().required('La corriente es obligatoria'),
   purchaseDate: yup.string().required('La fecha de compra es obligatoria'),
-  bookValue: yup.number().required('El valor en libros es obligatorio'),
+  bookValue: yup
+    .number()
+    .transform((value, originalValue) => (originalValue === '' || originalValue === null || originalValue === undefined ? undefined : value))
+    .typeError('El valor contable debe ser un número')
+    .required('El valor en libros es obligatorio'),
   supplier: yup.string().required('El proveedor es obligatorio'),
   warranty: yup.string().required('La garantía es obligatoria'),
   warrantyStartDate: yup.string().required('La fecha de inicio de garantía es obligatoria'),
@@ -895,15 +899,26 @@ const ProductForm = ({ open, onClose, rowSelect }: any) => {
                     <Controller
                       name='bookValue'
                       control={control}
-                      render={({ field }) => (
-                        <CustomTextField
-                          {...field}
-                          fullWidth
-                          label='Valor contable'
-                          error={Boolean(errors.bookValue)}
-                          helperText={errors.bookValue?.message}
-                        />
-                      )}
+                      render={({ field: { onChange, value, ref } }) => {
+                        const { NumericFormat } = require('react-number-format')
+                        return (
+                          <NumericFormat
+                            customInput={CustomTextField}
+                            fullWidth
+                            label='Valor contable'
+                            error={Boolean(errors.bookValue)}
+                            helperText={errors.bookValue?.message}
+                            thousandSeparator='.'
+                            decimalSeparator=','
+                            prefix='$ '
+                            value={value !== undefined && value !== null && value !== '' ? value : ''}
+                            onValueChange={(values: any) => {
+                              onChange(values.floatValue !== undefined ? values.floatValue : '')
+                            }}
+                            getInputRef={ref}
+                          />
+                        )
+                      }}
                     />
 
                     <Controller
