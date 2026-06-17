@@ -899,7 +899,7 @@ const ProductForm = ({ open, onClose, rowSelect }: any) => {
                     <Controller
                       name='bookValue'
                       control={control}
-                      render={({ field }) => {
+                      render={({ field: { onChange, value, ref } }) => {
                         const { NumericFormat } = require('react-number-format')
                         return (
                           <NumericFormat
@@ -911,10 +911,11 @@ const ProductForm = ({ open, onClose, rowSelect }: any) => {
                             thousandSeparator='.'
                             decimalSeparator=','
                             prefix='$ '
-                            value={field.value !== undefined && field.value !== null && field.value !== '' ? field.value : ''}
+                            value={value !== undefined && value !== null && value !== '' ? value : ''}
                             onValueChange={(values: any) => {
-                              field.onChange(values.floatValue !== undefined ? values.floatValue : '')
+                              onChange(values.floatValue !== undefined ? values.floatValue : '')
                             }}
+                            getInputRef={ref}
                           />
                         )
                       }}
