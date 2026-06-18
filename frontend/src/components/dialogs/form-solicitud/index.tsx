@@ -265,6 +265,11 @@ const SolicitudForm = ({
       const currentIds = new Set((Array.isArray(productsList) ? productsList : []).map((p: any) => String(p?.id)))
       const selectedIds = (Array.isArray(checked) ? checked : []).filter((id: any) => currentIds.has(String(id)))
 
+      if (selectedIds.length === 0) {
+        alert('Debe seleccionar al menos 1 producto de la lista con checkbox.')
+        return
+      }
+
       // Si tienes un ID, significa que estás actualizando el usuario, de lo contrario, creas uno nuevo
 
       const method = id ? 'put' : 'post' // Actualización o Creación
