@@ -71,13 +71,11 @@ const FormCustomer = () => {
         throw new Error('Token no disponible. Por favor, inicia sesión nuevamente.')
       }
 
-      // Si tienes un ID, significa que estás actualizando el usuario, de lo contrario, creas uno nuevo
-
-      const method = 'post' // Actualización o Creación
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/customers/account-setup` // Creación
+      const method = 'post'
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/customers/account-setup`
 
       const response = await axios({
-        method: method, // Usa 'put' para actualización o 'post' para creación
+        method: method,
         url: apiUrl,
         data: { userId: userMethods.getUserLogin().id, form: { ...data, status: '1', type: '1' } },
         headers: {
@@ -95,7 +93,11 @@ const FormCustomer = () => {
       setValue('position', '')
 
       reset()
-      localStorage.setItem('UserLogin', JSON.stringify(response.data))
+
+      // FIX: guardar solo userEntity (igual que AuthManager.authorize),
+      // no el AuthResponse completo — evita que userMethods.isRole() falle
+      // porque buscaba roles en el nivel raíz en vez de en userEntity.
+      localStorage.setItem('UserLogin', JSON.stringify(response.data.userEntity))
 
       router.push('/home')
     } catch (error) {
@@ -241,7 +243,6 @@ const FormCustomer = () => {
                 value={editData ? editData.position : ''}
                 onChange={e => {
                   setEditData({ ...editData, position: e.target.value })
-
                   setValue('position', e.target.value)
                 }}
                 error={!!errors.position}

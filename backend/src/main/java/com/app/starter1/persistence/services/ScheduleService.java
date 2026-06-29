@@ -4,7 +4,8 @@ import java.util.stream.Collectors;
 
 import com.app.starter1.dto.ScheduleProductClientDTO;
 import com.app.starter1.dto.ScheduleProductClientProjection;
-import com.app.starter1.persistence.services.CustomerService;
+import com.app.starter1.persistence.entity.UserEntity;
+import com.app.starter1.persistence.repository.UserRepository;
 
 import com.app.starter1.dto.ScheduleDto;
 import com.app.starter1.dto.ScheduleRequest;
@@ -31,7 +32,13 @@ public class ScheduleService {
     @Autowired
     private ProductRepository productRepository;
 
-    @Autowired CustomerService customerService;
+    @Autowired
+    private CustomerService customerService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    private static final String ROLE_SUPERADMIN = "ROLE_SUPERADMIN";
 
     @Transactional
     public void deleteByDeviceId(Long deviceId) {
@@ -40,39 +47,54 @@ public class ScheduleService {
 
     @Transactional
     public void createSchedules(ScheduleRequest scheduleRequest) {
-        // Buscar el dispositivo por ID
         Product device = productRepository.findById(scheduleRequest.getDeviceId())
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
-        System.out.println("device "+scheduleRequest.getDeviceId());
-        //eliminamos todos la programacion actual del producto
+        System.out.println("device " + scheduleRequest.getDeviceId());
 
         Long deviceId = device.getId();
-        // 1) Borrar programación previa
         long deleted = scheduleRepository.deleteByDeviceId(deviceId);
         System.out.println("Schedules eliminados para device " + deviceId + ": " + deleted);
 
-        System.out.println("eliminaos");
-
         for (String fecha : scheduleRequest.getFechas()) {
-            // Verificar si ya existe un Schedule para este dispositivo y fecha
             boolean exists = scheduleRepository.existsByDeviceIdAndDate(scheduleRequest.getDeviceId(), fecha);
-
             if (!exists) {
-                // Si no existe, guardar el nuevo Schedule
                 Schedule schedule = Schedule.builder()
                         .device(device)
-                        .date(LocalDate.parse(fecha).toString())  // Convierte la fecha a String
-                        .status(Schedule.Status.ACTIVE)  // Estado según corresponda
+                        .date(LocalDate.parse(fecha).toString())
+                        .status(Schedule.Status.ACTIVE)
                         .build();
-
                 scheduleRepository.save(schedule);
             }
         }
     }
 
+    /**
+     * Devuelve schedules según el rol del usuario autenticado:
+     * - SUPERADMIN → todos los schedules
+     * - Cualquier otro rol → solo los schedules del Customer al que pertenece el usuario
+     *
+     * @param username  username extraído del JWT (SecurityContext)
+     * @param isSuperAdmin  true si el token contiene ROLE_SUPERADMIN
+     */
+    public List<ScheduleProductClientProjection> getAllSchedulesForUser(String username, boolean isSuperAdmin) {
+        if (isSuperAdmin) {
+            return scheduleRepository.findAllScheduleWithProductAndClient();
+        }
 
+        UserEntity user = userRepository.findUserEntityByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username));
 
+        if (user.getCustomer() == null) {
+            // Usuario sin customer asignado — retorna lista vacía por seguridad
+            return List.of();
+        }
+
+        Long customerId = user.getCustomer().getId();
+        return scheduleRepository.findAllScheduleWithProductAndClientByCustomer(customerId);
+    }
+
+    // Mantener método legacy por si se usa en otro lado
     public List<ScheduleProductClientProjection> getAllSchedulesWithProductAndCustomer() {
         return scheduleRepository.findAllScheduleWithProductAndClient();
     }
@@ -89,5 +111,4 @@ public class ScheduleService {
 
         return false;
     }
-
 }
