@@ -31,6 +31,9 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     // Método para verificar si ya existe un Schedule con el mismo dispositivo y fecha
     boolean existsByDeviceIdAndDate(Long deviceId, String date);
 
+    /**
+     * Todos los schedules — solo para SUPERADMIN.
+     */
     @Query(value = "SELECT " +
             "s.id AS id, s.date AS date, s.status AS status, " +
             "p.marca_producto AS brand, p.modelo_producto AS model, " +
@@ -42,6 +45,19 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
             nativeQuery = true)
     List<ScheduleProductClientProjection> findAllScheduleWithProductAndClient();
 
-
+    /**
+     * Schedules filtrados por customer_id — para usuarios no SUPERADMIN.
+     */
+    @Query(value = "SELECT " +
+            "s.id AS id, s.date AS date, s.status AS status, " +
+            "p.marca_producto AS brand, p.modelo_producto AS model, " +
+            "p.nombre_producto AS nombreProducto, p.placa_producto AS placaProducto, " +
+            "c.nombre_cliente AS nombreCliente " +
+            "FROM schedule s " +
+            "LEFT JOIN products p ON s.device = p.id_producto " +
+            "LEFT JOIN clientes c ON p.cliente_producto = c.id " +
+            "WHERE c.id = :customerId",
+            nativeQuery = true)
+    List<ScheduleProductClientProjection> findAllScheduleWithProductAndClientByCustomer(
+            @Param("customerId") Long customerId);
 }
-         

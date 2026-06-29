@@ -82,6 +82,7 @@ const SolicitudForm = ({
   const [checked, setChecked] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const selectedProducts = React.useMemo(() => (
     Array.isArray(productsList)
@@ -251,6 +252,8 @@ const SolicitudForm = ({
   }, [errors])
 
   const onSubmit = async (data: any) => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
     try {
       const token = localStorage.getItem('AuthToken')
 
@@ -267,6 +270,7 @@ const SolicitudForm = ({
 
       if (selectedIds.length === 0) {
         alert('Debe seleccionar al menos 1 producto de la lista con checkbox.')
+        setIsSubmitting(false)
         return
       }
 
@@ -285,16 +289,14 @@ const SolicitudForm = ({
         }
       })
 
-
-
-      // Procesar la respuesta
-      if (response.data.result === 'success') {
-        console.log('Solicitud guardado con éxito:', response.data)
+      // El backend retorna List<Solicitud> con status 200 cuando es exitoso
+      if (response.status === 200 || response.status === 201) {
+        console.log('Solicitud guardada con éxito:', response.data)
         onClose()
-        setOpen() // Cierra el diálogo y resetea el estado de apertura
-        // Aquí puedes redirigir o mostrar un mensaje de éxito
+        setOpen() // Cierra el diálogo y refresca la lista
       } else {
-        console.error('Error en la respuesta:', response.data.message)
+        console.error('Error en la respuesta:', response.data)
+        alert('Error al guardar la solicitud. Intente nuevamente.')
       }
 
       setEditData(null)
@@ -312,8 +314,12 @@ const SolicitudForm = ({
       setId(null)
 
       onClose()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al enviar los datos:', error)
+      const msg = error?.response?.data?.message || error?.message || 'Error desconocido al guardar'
+      alert(`Error al guardar la solicitud: ${msg}`)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -672,8 +678,8 @@ const SolicitudForm = ({
         <Button onClick={onClose} color='secondary'>
           Cerrar
         </Button>
-        <Button type='submit' variant='contained' color='primary' onClick={handleSubmit(onSubmit)}>
-          Guardar datos
+        <Button type='submit' variant='contained' color='primary' onClick={handleSubmit(onSubmit)} disabled={isSubmitting}>
+          {isSubmitting ? 'Guardando...' : 'Guardar datos'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -25,7 +25,7 @@ public class Solicitud {
     @Column(name = "hora", length = 10)
     private String hora;
 
-    @Column(name = "description", length = 10)
+    @Column(name = "description", length = 500)
     private String description;
 
     @ManyToOne

@@ -1,7 +1,7 @@
 // MUI Imports
 import Grid from '@mui/material/Grid'
 
-// Components Imports
+// Components Imports...
 import CongratulationsJohn from '@views/apps/ecommerce/dashboard/Congratulations'
 import StatisticsCard from '@views/apps/ecommerce/dashboard/StatisticsCard'
 import LineChartProfit from '@views/apps/ecommerce/dashboard/LineChartProfit'
@@ -42,18 +42,18 @@ import RequestsByMonthBar from '@views/apps/ecommerce/dashboard/RequestsByMonthB
 
 const EcommerceDashboard = async () => {
   // Vars
-  const invoiceData:any[] = []
+  const invoiceData: any[] = []
 
   return (
     <Grid container spacing={6}>
       <Grid item xs={12} md={4}>
-      <SolicitudesDonut />
+        <SolicitudesDonut />
       </Grid>
       <Grid item xs={12} md={8}>
         <EstadisticasGenerales />
       </Grid>
       <Grid item xs={12} xl={4}>
-      <ListaTrabajo />
+        <ListaTrabajo />
       </Grid>
       <Grid item xs={12} xl={8}>
         {/* <RevenueReport /> */}
