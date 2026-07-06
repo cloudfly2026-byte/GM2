@@ -60,7 +60,6 @@ const CheckListForm = ({ open, onClose, rowSelect }: any) => {
   const [typeDeviceList, setTypeDeviceList] = useState<any[]>([])
   const [customersList, setCustomersList] = useState<any[]>([])
   const [plantillasList, setPlantillasList] = useState<any[]>([])
-  const [disabledAdd, setDisabledAdd] = useState(true)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
   const [formTemplate, setFormTemplate] = useState<any[]>([])
 
@@ -100,7 +99,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
     handleSubmit,
     formState: { errors },
     setValue,
-    reset
+    reset,
+    watch
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
@@ -112,6 +112,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
     },
     mode: 'onSubmit'
   })
+
+  const watchNombreChequeo = watch('nombreChequeo')
 
   useEffect(() => {
     console.log('errors ', errors)
@@ -302,24 +304,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
                   {...field}
                   className='mt-4'
                   fullWidth
-                  onKeyUp={e => {
-                    console.log('Check:', (e.target as HTMLInputElement).value)
-
-                    if((e.target as HTMLInputElement).value === ''){
-                      setDisabledAdd(true)
-
-
-                    }else{
-                      setDisabledAdd(false)
-                    }
-                  }}
-                  onBlur={e => {
-
+                  onChange={e => {
+                    field.onChange(e)
                     setEditData({ ...editData, nombreChequeo: e.target.value })
-                    setValue('nombreChequeo', e.target.value)
-
-
-                }}
+                  }}
                   label='Nombre del chequeo'
                   error={Boolean(errors.nombreChequeo)}
                   helperText={errors.nombreChequeo?.message}
@@ -333,12 +321,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
               type='button'
               variant='contained'
               color='success'
-              disabled={disabledAdd}
+              disabled={!watchNombreChequeo || watchNombreChequeo.trim() === ''}
               className='mt-4'
               onClick={() => {
                 console.log('editData', editData)
 
-                setFormTemplate([...formTemplate, { nom: editData.nombreChequeo}])
+                setFormTemplate([...formTemplate, { nom: watchNombreChequeo }])
                 setValue('nombreChequeo', '')
                 setEditData({ ...editData, nombreChequeo: '' })
 
