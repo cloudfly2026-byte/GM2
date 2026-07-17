@@ -205,7 +205,7 @@ const ProductViewLayout = () => {
               </Grid>
               <Grid item xs={3} sm={3}>
               <Typography>
-              <strong>Valor Contable:</strong> {product.bookValue}
+              <strong>Valor Contable:</strong> {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(product.bookValue)}
             </Typography>
 
               </Grid>
