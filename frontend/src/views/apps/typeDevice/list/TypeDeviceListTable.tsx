@@ -260,6 +260,7 @@ const TypeDeviceListTable = ({ reload, tableData }: { reload?: any; tableData?: 
 
       // Existing editable selector to change the assignment
       columnHelper.accessor('typeDevice', {
+        id: 'plantillaVerificacionSelect',
         header: 'Plantilla de verificación',
         cell: ({ row }) => (
           <div className=' items-center gap-4'>
