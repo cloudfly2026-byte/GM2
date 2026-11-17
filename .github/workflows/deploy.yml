@@ -114,7 +114,7 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: 5434
           source: "docker-compose.prod.yml"
-          target: "/media/backup/server/GM2/"
+          target: "/GM2/"
 
       - name: Deploy PROD to server
         uses: appleboy/ssh-action@v1.0.3
@@ -124,7 +124,7 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: 5434
           script: |
-            cd /media/backup/server/GM2/ || exit 1
+            cd /GM2 || exit 1
 
             # Log into ghcr.io to pull private images
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
