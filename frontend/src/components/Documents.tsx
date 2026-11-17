@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -11,6 +12,7 @@ import {
   Checkbox,
   Chip,
   Grid,
+  Snackbar,
   TextField,
   Typography,
 } from '@mui/material';
@@ -38,6 +40,11 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete, 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [canMarkAsReport, setCanMarkAsReport] = useState(false);
+  const [feedback, setFeedback] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'warning' | 'info' }>({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
 
   const router = useRouter();
 
@@ -54,8 +61,6 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete, 
       return doc.report === true;
     });
 
-
-    
     const normal = docs.filter(doc => doc.report === false);
     
     console.log('Reportes encontrados:', reports.length, 'documentos');
@@ -63,7 +68,7 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete, 
     
     setReportDocuments(reports);
     setNormalDocuments(normal);
-    reportDocs(documents);
+    reportDocs(docs);
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,7 +124,7 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete, 
 
   const handleUpload = async () => {
     if (!file) {
-      alert('Por favor, selecciona un archivo.');
+      setFeedback({ open: true, message: 'Por favor, selecciona un archivo.', severity: 'warning' });
       return;
     }
 
@@ -171,7 +176,7 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete, 
       console.log('Respuesta del backend:', response.data);
       console.log('Valor de report enviado:', formData.get('report'));
 
-      alert('Archivo cargado exitosamente');
+      setFeedback({ open: true, message: 'Archivo cargado exitosamente', severity: 'success' });
 
       setDocuments(response.data);
       separateDocuments(response.data);
@@ -182,60 +187,51 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete, 
       setIsReport(false);
     } catch (error) {
       console.error('Error al cargar el archivo:', error);
-      alert('Hubo un error al cargar el archivo.');
+      setFeedback({ open: true, message: 'Hubo un error al cargar el archivo.', severity: 'error' });
     }
   };
 
   const handleDeleteConfirm = async(document_name:string) => {
-
     console.log('Eliminar documento tr',document_name)
     setName(document_name)
     setOpen(true)
-
   }
 
   const handleDelete = async (document_name:string) => {
+    const docToDelete = document_name || name;
+    console.info('Eliminando documento:', docToDelete)
 
-    // eslint-disable-next-line no-console
-    console.info('api.',document_name)
-
-    if(document_name ){
-
+    if (docToDelete) {
       try {
+        const token = localStorage.getItem('AuthToken');
 
-      const token = localStorage.getItem('AuthToken');
+        if (!token) {
+          throw new Error('Token no disponible. Por favor, inicia sesión nuevamente.');
+        }
 
-      if (!token) {
-        throw new Error('Token no disponible. Por favor, inicia sesión nuevamente.');
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/document/${encodeURIComponent(docToDelete)}`;
+
+        await axios.delete(apiUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        // Refrescar lista tanto de documentos normales como de reportes
+        setDocuments((prevDocuments) => {
+          const next = prevDocuments.filter((doc) => doc.name !== docToDelete);
+          separateDocuments(next);
+          return next;
+        });
+
+        setFeedback({ open: true, message: 'Documento eliminado exitosamente', severity: 'success' });
+        setOpen(false)
+      } catch (error) {
+        console.error('Error al eliminar el documento:', error);
+        setFeedback({ open: true, message: 'No se pudo eliminar el documento. Inténtalo de nuevo.', severity: 'error' });
+        setOpen(false)
       }
-
-      // Llamada a la API para eliminar el documento
-      // encodeURIComponent: los nombres traen &, ( ), acentos... sin codificar el
-        // backend recibia otro nombre y findByName devolvia null (=> 404/500).
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/document/${encodeURIComponent(name)}`;
-
-      await axios.delete(apiUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      // Eliminar del estado local y notificar con la lista YA filtrada
-      setDocuments((prevDocuments) => {
-        const next = prevDocuments.filter((doc) => doc.name !== name);
-        reportDocs(next);
-        return next;
-      });
-      setOpen(false)
-
-    } catch (error) {
-      console.error('Error al eliminar el documento:', error);
-      // antes era solo console.error: el dialogo se cerraba y no pasaba nada
-      alert('No se pudo eliminar el documento. Intentalo de nuevo.');
-      setOpen(false)
     }
-
-  }
   }
 
   return (
@@ -354,9 +350,23 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete, 
         onConfirmation={(dv:string) => {
           console.log('Documento eliminado desde c',dv)
           handleDelete(dv)
-          setOpen(false)
         }}
       />
+      <Snackbar
+        open={feedback.open}
+        autoHideDuration={4000}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+          severity={feedback.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {feedback.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
