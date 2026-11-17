@@ -25,9 +25,10 @@ interface DocumentsProps {
   product_id: any;
   reportDocs: (data: any[]) => void;
   toDelete: string | null;
+  clearToDelete?: () => void;
 }
 
-const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete }) => {
+const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete, clearToDelete }) => {
   const [file, setFile] = useState<File | null>(null);
   const [tag, setTag] = useState<string>('');
   const [isReport, setIsReport] = useState<boolean>(false);
@@ -76,9 +77,9 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete }
   useEffect(() => {
     if(toDelete){
       handleDeleteConfirm(toDelete)
+      // limpiar el disparador: sin esto, repetir el mismo borrado no reaccionaba
+      clearToDelete?.()
     }
-
-
   }, [toDelete]);
 
   useEffect(() => {
@@ -209,7 +210,9 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete }
       }
 
       // Llamada a la API para eliminar el documento
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/document/${name}`;
+      // encodeURIComponent: los nombres traen &, ( ), acentos... sin codificar el
+        // backend recibia otro nombre y findByName devolvia null (=> 404/500).
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/document/${encodeURIComponent(name)}`;
 
       await axios.delete(apiUrl, {
         headers: {
@@ -217,16 +220,19 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete }
         },
       });
 
-      // Eliminar el documento del estado local después de la confirmación
-      setDocuments((prevDocuments) =>
-        prevDocuments.filter((doc) => doc.name !== name)
-      );
+      // Eliminar del estado local y notificar con la lista YA filtrada
+      setDocuments((prevDocuments) => {
+        const next = prevDocuments.filter((doc) => doc.name !== name);
+        reportDocs(next);
+        return next;
+      });
       setOpen(false)
-      reportDocs(documents);
 
     } catch (error) {
       console.error('Error al eliminar el documento:', error);
-
+      // antes era solo console.error: el dialogo se cerraba y no pasaba nada
+      alert('No se pudo eliminar el documento. Intentalo de nuevo.');
+      setOpen(false)
     }
 
   }

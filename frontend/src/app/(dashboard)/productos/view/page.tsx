@@ -259,7 +259,7 @@ const ProductViewLayout = () => {
       </Grid>
 
       <Grid item xs={12} md={12}>
-          <Documents product_id={product.id} reportDocs={(data)=>setReportDocs(data)} toDelete={deleteConfirmDocument}/>
+          <Documents product_id={product.id} reportDocs={(data)=>setReportDocs(data)} toDelete={deleteConfirmDocument} clearToDelete={() => setDeleteConfirmDocument(null)}/>
 
 
       </Grid>

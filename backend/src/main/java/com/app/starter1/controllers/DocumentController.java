@@ -109,13 +109,14 @@ public class DocumentController {
 
     @DeleteMapping("/{filename:.+}")
     public ResponseEntity<Void> deleteDocument(@PathVariable String filename) {
+        // La busqueda y el 404 se resuelven FUERA del try.
+        // ResponseStatusException extiende RuntimeException, asi que el catch de abajo
+        // atrapaba su propia excepcion y convertia el 404 en 500.
+        Document document = documentRepository.findByName(filename);
+        if (document == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Documento no encontrado: " + filename);
+        }
         try {
-            // Verificar si el documento existe en la base de datos
-            Document document = documentRepository.findByName(filename);
-            if (document == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Documento no encontrado: " + filename);
-            }
-            System.out.println(filename);
             // Eliminar el archivo del almacenamiento
             documentStorageService.delete(filename);
 
