@@ -67,28 +67,29 @@ const ProductViewLayout = () => {
 
 
 
+  const hasImage = Boolean(product?.image?.name || (typeof product?.image === 'string' && product?.image.trim() !== ''));
+
   return (
     <Grid container spacing={2}>
-      {/* Columna izquierda (30%) */}
-      <Grid item xs={12} md={3}>
-        <Card>
-          <CardContent>
-            <Image
-              src={
-                product.image
-                  ? `${process.env.NEXT_PUBLIC_API_URL}/media/${product.image.name}`
-                  : `${process.env.NEXT_PUBLIC_API_URL}/media/default.png`
-              }
-              alt={product.productName}
-              width={300}
-              height={300}
-            />
-          </CardContent>
-        </Card>
-      </Grid>
+      {/* Columna izquierda (imagen) si existe */}
+      {hasImage && (
+        <Grid item xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <Image
+                src={`${process.env.NEXT_PUBLIC_API_URL}/media/${product.image.name || product.image}`}
+                alt={product.productName || 'Producto'}
+                width={300}
+                height={300}
+                style={{ objectFit: 'contain', maxWidth: '100%', height: 'auto' }}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+      )}
 
-      {/* Columna derecha (70%) */}
-      <Grid item xs={12} md={9}>
+      {/* Columna principal (ocupa todo el ancho 12 si no hay imagen, o 9 si la hay) */}
+      <Grid item xs={12} md={hasImage ? 9 : 12}>
         <Card sx={{ mb: 2 }}>
           <CardHeader title='Dispositivo' />
           <CardContent className='flex  gap-4'>
