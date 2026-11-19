@@ -46,7 +46,19 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete, 
     severity: 'info'
   });
 
+  const [canDelete, setCanDelete] = useState(false);
+
   const router = useRouter();
+
+  useEffect(() => {
+    // Cualquier rol existente puede eliminar documentos menos 'USER' (por ejemplo SUPERADMIN, ADMIN, BIOMEDICAL)
+    const hasAuthorizedRole = Boolean(
+      userMethods.isRole('SUPERADMIN') ||
+      userMethods.isRole('ADMIN') ||
+      userMethods.isRole('BIOMEDICAL')
+    );
+    setCanDelete(hasAuthorizedRole);
+  }, []);
 
   // Función para separar documentos en reportes y no reportes
   const separateDocuments = (docs: any[]) => {
@@ -192,12 +204,20 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete, 
   };
 
   const handleDeleteConfirm = async(document_name:string) => {
+    if (!canDelete) {
+      setFeedback({ open: true, message: 'No tienes permisos para eliminar documentos.', severity: 'warning' });
+      return;
+    }
     console.log('Eliminar documento tr',document_name)
     setName(document_name)
     setOpen(true)
   }
 
   const handleDelete = async (document_name:string) => {
+    if (!canDelete) {
+      setFeedback({ open: true, message: 'No tienes permisos para eliminar documentos.', severity: 'warning' });
+      return;
+    }
     const docToDelete = document_name || name;
     console.info('Eliminando documento:', docToDelete)
 
@@ -326,8 +346,8 @@ const Documents: React.FC<DocumentsProps> = ({ product_id,reportDocs, toDelete, 
                   onClick={() => {
                     window.open(`${process.env.NEXT_PUBLIC_API_URL}/document/${document.name}`, '_blank');
                   }}
-                  onDelete={() => handleDeleteConfirm(document.name)}
-                  deleteIcon={<i className='tabler-trash-x' />}
+                  onDelete={canDelete ? () => handleDeleteConfirm(document.name) : undefined}
+                  deleteIcon={canDelete ? <i className='tabler-trash-x' /> : undefined}
                   title={document.name}
                 />
               </Grid>

@@ -20,6 +20,8 @@ const ProductViewLayout = () => {
   const [reportDocs, setReportDocs] = useState<any[]>([])
   const [deleteConfirmDocument, setDeleteConfirmDocument] = useState<string | null>(null);
 
+  const [imageError, setImageError] = useState(false)
+
   useEffect(()=>{
 
     console.log("form templates",formTemplate);
@@ -28,6 +30,9 @@ const ProductViewLayout = () => {
   },[formTemplate])
 
   useEffect(() => {
+    // Resetear error de imagen al cambiar de producto
+    setImageError(false)
+
     // Carga los datos del localStorage
     const storedData = localStorage.getItem('productview')
     const productData = storedData ? JSON.parse(storedData) : null
@@ -67,11 +72,13 @@ const ProductViewLayout = () => {
 
 
 
-  const hasImage = Boolean(product?.image?.name || (typeof product?.image === 'string' && product?.image.trim() !== ''));
+  const hasImage = Boolean(
+    !imageError && (product?.image?.name || (typeof product?.image === 'string' && product?.image.trim() !== ''))
+  );
 
   return (
     <Grid container spacing={2}>
-      {/* Columna izquierda (imagen) si existe */}
+      {/* Columna izquierda (imagen) si existe y carga correctamente */}
       {hasImage && (
         <Grid item xs={12} md={3}>
           <Card>
@@ -82,6 +89,7 @@ const ProductViewLayout = () => {
                 width={300}
                 height={300}
                 style={{ objectFit: 'contain', maxWidth: '100%', height: 'auto' }}
+                onError={() => setImageError(true)}
               />
             </CardContent>
           </Card>
