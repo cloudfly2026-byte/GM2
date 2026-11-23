@@ -24,6 +24,10 @@ services:
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
       NEXT_FRONTEND_URL: https://gm2.equibiomedic.co
       CORS_ALLOWED_ORIGIN: https://gm2.equibiomedic.co
+      MEDIA_LOCATION: /app/uploads
+      SIGN_LOCATION: /app/firmas
+      BIOMEDICAL_FIRMA: /app/firma_soporte
+      DOCUMENT_LOCATION: /app/documents
     networks:
       - kafka-net
       - mired

@@ -6,11 +6,13 @@ import com.app.starter1.persistence.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -63,6 +65,12 @@ public class CustomerService {
     @Autowired
     @Lazy
     private PasswordEncoder passwordEncoder;
+
+    @Value("${document.location:/app/documents}")
+    private String documentLocation;
+
+    @Value("${media.location:/app/uploads}")
+    private String mediaLocation;
 
     public static boolean parseStatus(Object rawStatus) {
         if (rawStatus == null) {
@@ -222,22 +230,20 @@ public class CustomerService {
                 List<Solicitud> equipoSolicitudes = solicitudRepository.findByEquipoId(prodId);
                 deleteSolicitudesAndChildren(equipoSolicitudes);
 
-                // Documentos del equipo (+ limpieza segura de archivo físico si existe)
+                // Documentos del equipo (+ limpieza segura de archivo físico en document.location)
                 List<Document> docs = documentRepository.findByEquipment(prodId);
                 if (docs != null && !docs.isEmpty()) {
                     for (Document doc : docs) {
-                        deleteFileSilently("uploads/documents/" + doc.getName());
-                        deleteFileSilently("documents/" + doc.getName());
+                        deleteFileSilently(documentLocation, doc.getName());
                     }
                     documentRepository.deleteAll(docs);
                 }
 
-                // Imágenes del equipo (+ limpieza segura de archivo físico si existe)
+                // Imágenes del equipo (+ limpieza segura de archivo físico en media.location)
                 List<Image> images = imageRepository.findByEquipment(prodId);
                 if (images != null && !images.isEmpty()) {
                     for (Image img : images) {
-                        deleteFileSilently("uploads/images/" + img.getName());
-                        deleteFileSilently("media/" + img.getName());
+                        deleteFileSilently(mediaLocation, img.getName());
                     }
                     imageRepository.deleteAll(images);
                 }
@@ -303,10 +309,11 @@ public class CustomerService {
         solicitudRepository.deleteAll(solicitudes);
     }
 
-    private void deleteFileSilently(String pathStr) {
+    private void deleteFileSilently(String baseDir, String filename) {
         try {
-            if (pathStr != null && !pathStr.endsWith("null")) {
-                Files.deleteIfExists(Paths.get(pathStr));
+            if (baseDir != null && filename != null && !filename.isBlank()) {
+                Path target = Paths.get(baseDir).resolve(filename).normalize().toAbsolutePath();
+                Files.deleteIfExists(target);
             }
         } catch (Exception ignored) {
             // No bloquear la transacción de BD si el archivo físico no existe
