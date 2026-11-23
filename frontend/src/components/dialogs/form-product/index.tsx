@@ -43,7 +43,13 @@ const schema = yup.object().shape({
 
   //productClass: yup.string().required('La clase de producto es obligatoria'),
   classification: yup.string().notOneOf(['0'], 'La clasificación es obligatoria'),
-  customer: userMethods.isRole('ADMIN') ? yup.string().notRequired() : yup.string().notOneOf(['0'], 'El cliente es requerido'),
+  customer: yup.string().test('customer-required', 'El cliente es requerido', value => {
+    if (userMethods.isRole('ADMIN') || userMethods.isRole('USER')) {
+      return true
+    }
+
+    return Boolean(value && value !== '0')
+  }),
   status: yup.string().notOneOf(['0'], 'El estado es obligatorio'),
 
   invimaRegister: yup.string().required('El registro de inventario es obligatorio'),

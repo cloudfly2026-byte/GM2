@@ -443,7 +443,7 @@ const ProductsListTable = ({ reload, tableData }: any) => {
               <i className='tabler-eye text-textSecondary' />
             </IconButton>
             </Tooltip>
-            {(userMethods.isRole('SUPERADMIN') || userMethods.isRole('BIOMEDICAL') || userMethods.isRole('ADMIN')) ? (
+            {(userMethods.isRole('SUPERADMIN') || userMethods.isRole('BIOMEDICAL') || userMethods.isRole('ADMIN') || userMethods.isRole('USER')) ? (
               <Tooltip title='Editar'>
                 <IconButton
                   onClick={() => {
@@ -611,7 +611,7 @@ const ProductsListTable = ({ reload, tableData }: any) => {
               Importar
             </Button> */}
 
-            {(userMethods.isRole('SUPERADMIN') || userMethods.isRole('BIOMEDICAL') || userMethods.isRole('ADMIN')) && (
+            {(userMethods.isRole('SUPERADMIN') || userMethods.isRole('BIOMEDICAL') || userMethods.isRole('ADMIN') || userMethods.isRole('USER')) && (
             <Button
               onClick={() => {
                 setLoadForm(true)

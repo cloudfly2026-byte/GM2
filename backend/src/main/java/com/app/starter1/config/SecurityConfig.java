@@ -72,8 +72,8 @@ public class SecurityConfig {
 
                     //products
                     http.requestMatchers(HttpMethod.GET, "/products/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL","USER");
-                    http.requestMatchers(HttpMethod.PUT, "/products/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
-                    http.requestMatchers(HttpMethod.POST, "/products/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
+                    http.requestMatchers(HttpMethod.PUT, "/products/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL","USER");
+                    http.requestMatchers(HttpMethod.POST, "/products/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL","USER");
                     http.requestMatchers(HttpMethod.DELETE, "/products/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
 
                     //type device
@@ -140,7 +140,7 @@ public class SecurityConfig {
                     http.requestMatchers(HttpMethod.DELETE, "/media/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/document/**").permitAll();
                     http.requestMatchers(HttpMethod.POST, "/document/**").permitAll();
-                    http.requestMatchers(HttpMethod.DELETE, "/document/**").permitAll();
+                    http.requestMatchers(HttpMethod.DELETE, "/document/**").hasAnyRole("SUPERADMIN","ADMIN","BIOMEDICAL");
                     http.requestMatchers(HttpMethod.GET, "/firma-user/**").permitAll();
                     http.requestMatchers(HttpMethod.POST, "/firma-user/**").permitAll();
                     http.requestMatchers(HttpMethod.DELETE, "/firma-user/**").permitAll();
