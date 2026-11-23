@@ -6,11 +6,15 @@ import com.app.starter1.dto.LoginRequest;
 import com.app.starter1.dto.UserCreateUpdateRequest;
 import com.app.starter1.persistence.entity.Customer;
 import com.app.starter1.persistence.entity.RoleEntity;
+import com.app.starter1.persistence.entity.RoleEnum;
+import com.app.starter1.persistence.entity.Solicitud;
 import com.app.starter1.persistence.entity.UserEntity;
 import com.app.starter1.persistence.exeptions.UserNotFoundException;
 import com.app.starter1.persistence.repository.CustomerRepository;
 import com.app.starter1.persistence.repository.RoleRepository;
+import com.app.starter1.persistence.repository.SolicitudRepository;
 import com.app.starter1.persistence.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import com.app.starter1.util.JwtUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,26 +66,39 @@ public class UserDetailServiceAP implements UserDetailsService {
         @Autowired
         private CustomerRepository customerRepository; // Para obtener el cliente si es necesario
 
+        @Autowired
+        private SolicitudRepository solicitudRepository;
+
         public UserDetailServiceAP(NotificationProducerService producerService) {
                 this.producerService = producerService;
         }
 
         // Crear o actualizar un usuario
+        @Transactional
         public Map<String, Object> createOrUpdateUser(UserCreateUpdateRequest request) throws IllegalAccessException {
 
-                // Validar si las contraseñas coinciden
-                if (!request.getPassword().equals(request.getConfirmPassword())) {
-                        throw new IllegalArgumentException("Passwords do not match.");
-                }
+                boolean isNew = (request.getId() == null || request.getId() == 0L);
+                boolean hasNewPassword = (request.getPassword() != null && !request.getPassword().isBlank());
 
-                // Validar si el username o email ya están en uso
-                if (userRepository.existsByUsername(request.getUsername()) && request.getId() == '0') {
-                        throw new IllegalArgumentException(
-                                        "The username '" + request.getUsername() + "' is already taken.");
-                }
+                if (isNew) {
+                        // En creación la contraseña es obligatoria
+                        if (!hasNewPassword || !request.getPassword().equals(request.getConfirmPassword())) {
+                                throw new IllegalArgumentException("Las contraseñas no coinciden o están vacías.");
+                        }
 
-                if (userRepository.existsByEmail(request.getEmail()) && request.getId() == '0') {
-                        throw new IllegalArgumentException("The email '" + request.getEmail() + "' is already in use.");
+                        if (userRepository.existsByUsername(request.getUsername())) {
+                                throw new IllegalArgumentException(
+                                                "The username '" + request.getUsername() + "' is already taken.");
+                        }
+
+                        if (userRepository.existsByEmail(request.getEmail())) {
+                                throw new IllegalArgumentException("The email '" + request.getEmail() + "' is already in use.");
+                        }
+                } else if (hasNewPassword) {
+                        // En edición la contraseña es opcional, pero si se envía debe coincidir
+                        if (!request.getPassword().equals(request.getConfirmPassword())) {
+                                throw new IllegalArgumentException("Las contraseñas no coinciden.");
+                        }
                 }
 
                 // Buscar el rol
@@ -93,25 +110,49 @@ public class UserDetailServiceAP implements UserDetailsService {
                                 .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
 
                 // Crear o actualizar el usuario
-                UserEntity userEntity = userRepository.findById(request.getId())
-                                .orElse(new UserEntity()); // Si no existe, crear uno nuevo
+                UserEntity userEntity;
+                if (isNew) {
+                        userEntity = new UserEntity();
+                        userEntity.setUsername(request.getUsername());
+                        userEntity.setEmail(request.getEmail());
+                        userEntity.setPassword(passwordEncoder.encode(request.getPassword()));
+                        userEntity.setEnabled(true);
+                        userEntity.setAccountNoExpired(true);
+                        userEntity.setAccountNoLocked(true);
+                        userEntity.setCredentialNoExpired(true);
+                        userEntity.setVerificationToken("");
+                } else {
+                        userEntity = userRepository.findById(request.getId())
+                                        .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado."));
 
-                userEntity.setUsername(request.getUsername());
-                userEntity.setPassword(passwordEncoder.encode(request.getPassword()));
+                        // Si el usuario es actualmente ADMIN y se intenta cambiar a otro rol, validar que quede al menos un ADMIN en la empresa
+                        boolean wasAdmin = userEntity.getRoles() != null && userEntity.getRoles().stream()
+                                        .anyMatch(r -> r.getRoleEnum() == RoleEnum.ADMIN);
+                        boolean willBeAdmin = roleEntity.getRoleEnum() == RoleEnum.ADMIN;
+                        if (wasAdmin && !willBeAdmin && userEntity.getCustomer() != null) {
+                                long adminCount = userRepository.countByCustomerIdAndRoles_RoleEnum(
+                                                userEntity.getCustomer().getId(), RoleEnum.ADMIN);
+                                if (adminCount <= 1) {
+                                        throw new IllegalArgumentException(
+                                                        "No se puede cambiar el rol de este administrador porque la empresa debe tener al menos un usuario con rol ADMIN.");
+                                }
+                        }
 
-                userEntity.setEmail(request.getEmail());
-                userEntity.setRoles(Set.of(roleEntity));
+                        // En actualización NO se modifican username ni email (datos de cuenta protegidos)
+                        if (hasNewPassword) {
+                                userEntity.setPassword(passwordEncoder.encode(request.getPassword()));
+                        }
+                }
+
+                // Usar Set mutable para que Hibernate pueda gestionar la colección @ManyToMany sin UnsupportedOperationException
+                userEntity.setRoles(new HashSet<>(Set.of(roleEntity)));
                 userEntity.setCustomer(customer);
-                userEntity.setEnabled(true);
-                userEntity.setAccountNoLocked(true);
-                userEntity.setCredentialNoExpired(true);
                 userEntity.setApellidos(request.getApellidos() != null ? request.getApellidos() : "");
                 userEntity.setNombres(request.getNombres() != null ? request.getNombres() : "");
-                userEntity.setVerificationToken("");
+
                 UserEntity savedUser = userRepository.save(userEntity);
 
-                System.out.println("id user new " + request.getId());
-                if (request.getId() == 0) {
+                if (isNew) {
                         // Si es un nuevo usuario, generar un token de verificación
                         String token = UUID.randomUUID().toString();
                         userEntity.setVerificationToken(token);
@@ -136,11 +177,81 @@ public class UserDetailServiceAP implements UserDetailsService {
                 // Construir la respuesta con el formato requerido
                 Map<String, Object> response = new HashMap<>();
                 response.put("result", "success");
-                response.put("message", "User saved successfully.");
+                response.put("message", isNew ? "Usuario creado correctamente." : "Usuario actualizado correctamente.");
                 response.put("user", savedUser);
 
                 return response;
 
+        }
+
+        // Eliminar un usuario respetando aislamiento por empresa y protección del último ADMIN / SUPERADMIN
+        @Transactional
+        public void deleteUser(Long id, String actingUsername) throws UserNotFoundException {
+                UserEntity targetUser = userRepository.findById(id)
+                                .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado."));
+
+                UserEntity actingUser = actingUsername != null
+                                ? userRepository.findByUsername(actingUsername).orElse(null)
+                                : null;
+
+                boolean actingIsSuperAdmin = actingUser != null && actingUser.getRoles() != null
+                                && actingUser.getRoles().stream().anyMatch(r -> r.getRoleEnum() == RoleEnum.SUPERADMIN);
+
+                boolean targetIsSuperAdmin = targetUser.getRoles() != null
+                                && targetUser.getRoles().stream().anyMatch(r -> r.getRoleEnum() == RoleEnum.SUPERADMIN);
+                boolean targetIsAdmin = targetUser.getRoles() != null
+                                && targetUser.getRoles().stream().anyMatch(r -> r.getRoleEnum() == RoleEnum.ADMIN);
+                boolean targetIsBiomedical = targetUser.getRoles() != null
+                                && targetUser.getRoles().stream().anyMatch(r -> r.getRoleEnum() == RoleEnum.BIOMEDICAL);
+
+                // Validar permisos por empresa si el usuario que ejecuta no es SUPERADMIN
+                if (!actingIsSuperAdmin) {
+                        if (targetIsSuperAdmin || targetIsBiomedical) {
+                                throw new IllegalArgumentException("No tienes permisos para eliminar un usuario con ese rol.");
+                        }
+                        Long actingCustomerId = (actingUser != null && actingUser.getCustomer() != null)
+                                        ? actingUser.getCustomer().getId()
+                                        : null;
+                        Long targetCustomerId = targetUser.getCustomer() != null
+                                        ? targetUser.getCustomer().getId()
+                                        : null;
+                        if (actingCustomerId == null || !actingCustomerId.equals(targetCustomerId)) {
+                                throw new IllegalArgumentException("No puedes eliminar usuarios de otra empresa.");
+                        }
+                }
+
+                // Proteger el último SUPERADMIN del sistema
+                if (targetIsSuperAdmin) {
+                        long superAdminCount = userRepository.countByRoles_RoleEnum(RoleEnum.SUPERADMIN);
+                        if (superAdminCount <= 1) {
+                                throw new IllegalArgumentException("No se puede eliminar el último SUPERADMIN del sistema.");
+                        }
+                }
+
+                // Proteger el último ADMIN de la empresa
+                if (targetIsAdmin && targetUser.getCustomer() != null) {
+                        long adminCount = userRepository.countByCustomerIdAndRoles_RoleEnum(
+                                        targetUser.getCustomer().getId(), RoleEnum.ADMIN);
+                        if (adminCount <= 1) {
+                                throw new IllegalArgumentException(
+                                                "No se puede eliminar este administrador porque la empresa debe tener al menos un usuario con rol ADMIN.");
+                        }
+                }
+
+                // Desvincular solicitudes asignadas para evitar error de llave foránea
+                List<Solicitud> assignedSolicitudes = solicitudRepository.findByUsuarioAsignadoId(id);
+                if (assignedSolicitudes != null && !assignedSolicitudes.isEmpty()) {
+                        for (Solicitud solicitud : assignedSolicitudes) {
+                                solicitud.setUsuarioAsignado(null);
+                        }
+                        solicitudRepository.saveAll(assignedSolicitudes);
+                }
+
+                // Limpiar roles y eliminar usuario
+                if (targetUser.getRoles() != null) {
+                        targetUser.getRoles().clear();
+                }
+                userRepository.delete(targetUser);
         }
 
         @Override

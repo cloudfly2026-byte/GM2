@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
+import Alert from '@mui/material/Alert'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
+import Snackbar from '@mui/material/Snackbar'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
@@ -21,12 +28,26 @@ import { AuthManager } from '@/utils/authManager'
 import { userMethods } from '@/utils/userMethods'
 
 const RegisterV3 = ({ id }: { id: string }) => {
+  const isEditing = Boolean(id && id !== '' && id !== '0')
+
   // States
   const [isPasswordShown, setIsPasswordShown] = useState(false)
   const [isConfirmPasswordShown, setIsConfirmPasswordShown] = useState(false)
   const [customersList, setCustomersList] = useState<any[]>([])
   const [roleList, setRoleList] = useState<any[]>([])
-  const [userData, setUserData] = useState<any>(null) // Nuevo estado para almacenar los datos del usuario
+  const [userData, setUserData] = useState<any>(null)
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false)
+  const [pendingSubmitData, setPendingSubmitData] = useState<any>(null)
+  const [saving, setSaving] = useState(false)
+  const [feedback, setFeedback] = useState<{
+    open: boolean
+    message: string
+    severity: 'success' | 'error' | 'warning' | 'info'
+  }>({
+    open: false,
+    message: '',
+    severity: 'info'
+  })
 
   const router = useRouter()
 
@@ -74,7 +95,7 @@ const RegisterV3 = ({ id }: { id: string }) => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (id !== '') {
+      if (isEditing) {
         try {
           const token = localStorage.getItem('AuthToken')
 
@@ -89,51 +110,55 @@ const RegisterV3 = ({ id }: { id: string }) => {
             }
           })
 
-          if (userMethods.isRole('ADMIN')) {
-            const userLogued = userMethods.getUserLogin()
+          const userLogued = userMethods.getUserLogin()
+          const resolvedCustomerId = userMethods.isRole('ADMIN')
+            ? userLogued?.customer?.id
+            : response.data.customer?.id
 
-            response.data.customer.id = userLogued.customer.id
-            setValue('customer', userLogued.customer.id)
-          } else {
-            setValue('customer', response.data.customer ? response.data.customer.id : '0')
+          const normalizedUser = {
+            ...response.data,
+            customer: resolvedCustomerId ? { id: resolvedCustomerId } : null
           }
 
-          setUserData(response.data)
-
-          setValue('role', response.data.roles ? response.data.roles[0].id : '0') // Cargar el rol
-          setValue('nombres', response.data.nombres || '') // Cargar nombres
-          setValue('apellidos', response.data.apellidos || '') // Cargar apellidos
-          setValue('username', response.data.username) // Cargar el nombre de usuario
-          setValue('email', response.data.email) // Cargar el correo electrónico
+          setUserData(normalizedUser)
+          setValue('customer', resolvedCustomerId ? String(resolvedCustomerId) : '')
+          setValue('role', response.data.roles && response.data.roles.length > 0 ? String(response.data.roles[0].id) : '')
+          setValue('nombres', response.data.nombres || '')
+          setValue('apellidos', response.data.apellidos || '')
+          setValue('username', response.data.username || '')
+          setValue('email', response.data.email || '')
+          setValue('password', '')
+          setValue('confirmPassword', '')
         } catch (error) {
           console.error('Error al cargar datos del usuario:', error)
+          setFeedback({
+            open: true,
+            message: 'No se pudieron cargar los datos del usuario.',
+            severity: 'error'
+          })
         }
       }
     }
 
-    console.log('load options')
-
-    if (id && customersList.length > 0 && roleList.length > 0) {
-      console.log('load user')
+    if (isEditing && customersList.length > 0 && roleList.length > 0) {
       fetchUserData()
     }
-  }, [customersList, roleList])
+  }, [customersList, roleList, isEditing, id])
 
-  // Validación con yup
+  // Validación con yup diferenciada entre creación y actualización
   const schema = yup.object().shape({
     customer: userMethods.isRole('ADMIN') ? yup.string().notRequired() : yup.string().required('Cliente es requerido'),
     role: yup.string().required('Rol es requerido'),
     nombres: yup.string().required('Los nombres son obligatorios'),
     apellidos: yup.string().required('Los apellidos son obligatorios'),
-    username: yup
-      .string()
-      .required('El nombre de usuario es obligatorio')
-      .min(8, 'El nombre de usuario debe tener al menos 8 caracteres')
-      .matches(/^[a-zA-Z0-9_]+$/, 'Solo se permiten letras, números y guion bajo (_). Sin espacios ni caracteres especiales')
-      .when([], {
-        is: () => !id, // Solo validar si no hay un ID
-        then: schema =>
-          schema.test('username-exists', 'El nombre de usuario ya está en uso', async value => {
+    username: isEditing
+      ? yup.string().notRequired()
+      : yup
+          .string()
+          .required('El nombre de usuario es obligatorio')
+          .min(8, 'El nombre de usuario debe tener al menos 8 caracteres')
+          .matches(/^[a-zA-Z0-9_]+$/, 'Solo se permiten letras, números y guion bajo (_). Sin espacios ni caracteres especiales')
+          .test('username-exists', 'El nombre de usuario ya está en uso', async value => {
             if (!value) return false
 
             try {
@@ -143,16 +168,14 @@ const RegisterV3 = ({ id }: { id: string }) => {
             } catch {
               return false
             }
-          })
-      }),
-    email: yup
-      .string()
-      .email('El correo electrónico no tiene un formato válido')
-      .required('El correo electrónico es obligatorio')
-      .when([], {
-        is: () => !id, // Solo validar si no hay un ID
-        then: schema =>
-          schema.test('email-exists', 'El correo electrónico ya está en uso', async value => {
+          }),
+    email: isEditing
+      ? yup.string().notRequired()
+      : yup
+          .string()
+          .email('El correo electrónico no tiene un formato válido')
+          .required('El correo electrónico es obligatorio')
+          .test('email-exists', 'El correo electrónico ya está en uso', async value => {
             if (!value) return false
 
             try {
@@ -162,20 +185,35 @@ const RegisterV3 = ({ id }: { id: string }) => {
             } catch {
               return false
             }
-          })
-      }),
-    password: yup
-      .string()
-      .min(8, 'La contraseña debe tener al menos 8 caracteres')
-      .matches(/[a-z]/, 'Debe contener al menos una letra minúscula')
-      .matches(/[A-Z]/, 'Debe contener al menos una letra mayúscula')
-      .matches(/[0-9]/, 'Debe contener al menos un número')
-      .matches(/[@$!%*?&]/, 'Debe contener al menos un carácter especial')
-      .required('La contraseña es obligatoria'),
-    confirmPassword: yup
-      .string()
-      .oneOf([yup.ref('password')], 'Las contraseñas deben coincidir')
-      .required('La confirmación de la contraseña es obligatoria')
+          }),
+    password: isEditing
+      ? yup
+          .string()
+          .transform(val => (val === '' ? undefined : val))
+          .notRequired()
+          .min(8, 'La contraseña debe tener al menos 8 caracteres')
+          .matches(/[a-z]/, 'Debe contener al menos una letra minúscula')
+          .matches(/[A-Z]/, 'Debe contener al menos una letra mayúscula')
+          .matches(/[0-9]/, 'Debe contener al menos un número')
+          .matches(/[@$!%*?&]/, 'Debe contener al menos un carácter especial')
+      : yup
+          .string()
+          .min(8, 'La contraseña debe tener al menos 8 caracteres')
+          .matches(/[a-z]/, 'Debe contener al menos una letra minúscula')
+          .matches(/[A-Z]/, 'Debe contener al menos una letra mayúscula')
+          .matches(/[0-9]/, 'Debe contener al menos un número')
+          .matches(/[@$!%*?&]/, 'Debe contener al menos un carácter especial')
+          .required('La contraseña es obligatoria'),
+    confirmPassword: isEditing
+      ? yup.string().when('password', {
+          is: (val: string | undefined) => Boolean(val && val.length > 0),
+          then: s => s.oneOf([yup.ref('password')], 'Las contraseñas deben coincidir').required('Confirme la nueva contraseña'),
+          otherwise: s => s.notRequired()
+        })
+      : yup
+          .string()
+          .oneOf([yup.ref('password')], 'Las contraseñas deben coincidir')
+          .required('La confirmación de la contraseña es obligatoria')
   })
 
   // Hook form con yup
@@ -186,12 +224,21 @@ const RegisterV3 = ({ id }: { id: string }) => {
     formState: { errors, isSubmitting }
   } = useForm({
     resolver: yupResolver(schema),
-    context: { isEditing: !!id }
+    defaultValues: {
+      customer: '',
+      role: '',
+      nombres: '',
+      apellidos: '',
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
+    }
   })
 
-  const onSubmit = async (data: any) => {
+  const executeSave = async (data: any) => {
+    setSaving(true)
     try {
-
       const token = localStorage.getItem('AuthToken')
 
       if (!token) {
@@ -199,28 +246,23 @@ const RegisterV3 = ({ id }: { id: string }) => {
       }
 
       const userDataS = {
-        id: id ? id : '0',
+        id: isEditing ? Number(id) : 0,
         customer: userMethods.isRole('ADMIN')
-          ? userMethods.getUserLogin().customer.id
-          : userData?.customer
-            ? userData.customer.id
-            : data.customer,
-        role: userData?.roles ? userData.roles[0].id : data.role,
+          ? String(userMethods.getUserLogin()?.customer?.id ?? '')
+          : String(data.customer || userData?.customer?.id || ''),
+        role: String(data.role || userData?.roles?.[0]?.id || ''),
         nombres: data.nombres,
         apellidos: data.apellidos,
-        username: data.username,
-        email: data.email,
-        password: data.password,
-        confirmPassword: data.confirmPassword
+        username: isEditing ? userData?.username || data.username : data.username,
+        email: isEditing ? userData?.email || data.email : data.email,
+        password: data.password || '',
+        confirmPassword: data.confirmPassword || ''
       }
 
-      console.log('to save', userDataS)
-
-      // Si tienes un ID, significa que estás actualizando el usuario, de lo contrario, creas uno nuevo
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/users/save` // Creación
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/users/save`
 
       const response = await axios({
-        method: 'post', // Usa 'put' para actualización o 'post' para creación
+        method: 'post',
         url: apiUrl,
         data: userDataS,
         headers: {
@@ -229,17 +271,44 @@ const RegisterV3 = ({ id }: { id: string }) => {
         }
       })
 
-      // Procesar la respuesta
       if (response.data.result === 'success') {
-        console.log('Usuario guardado con éxito:', response.data.user)
-        router.push('/accounts/user/list')
-
-        // Aquí puedes redirigir o mostrar un mensaje de éxito
+        setFeedback({
+          open: true,
+          message: response.data.message || (isEditing ? 'Usuario actualizado correctamente.' : 'Usuario registrado correctamente.'),
+          severity: 'success'
+        })
+        setTimeout(() => {
+          router.push('/accounts/user/list')
+        }, 900)
       } else {
-        console.error('Error en la respuesta:', response.data.message)
+        setFeedback({
+          open: true,
+          message: response.data.message || 'No se pudo guardar el usuario.',
+          severity: 'error'
+        })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al registrar o actualizar el usuario:', error)
+      const backendMessage =
+        error?.response?.data?.message || error?.message || 'Error al guardar el usuario.'
+      setFeedback({
+        open: true,
+        message: backendMessage,
+        severity: error?.response?.status === 400 ? 'warning' : 'error'
+      })
+    } finally {
+      setSaving(false)
+      setConfirmSaveOpen(false)
+      setPendingSubmitData(null)
+    }
+  }
+
+  const onSubmit = async (data: any) => {
+    if (isEditing) {
+      setPendingSubmitData(data)
+      setConfirmSaveOpen(true)
+    } else {
+      await executeSave(data)
     }
   }
 
@@ -262,17 +331,17 @@ const RegisterV3 = ({ id }: { id: string }) => {
                           {...field}
                           select
                           fullWidth
-                          value={userData?.customer ? userData.customer.id : '0'}
+                          value={field.value ?? ''}
                           onChange={e => {
-                            setUserData({ ...userData, customer: { id: e.target.value } })
-                            setValue('customer', e.target.value)
+                            field.onChange(e.target.value)
+                            setUserData((prev: any) => ({ ...prev, customer: { id: e.target.value } }))
                           }}
                           label='Cliente'
                           error={Boolean(errors.customer)}
                           helperText={errors.customer?.message}
                         >
                           {customersList.map(item => (
-                            <MenuItem key={item.id} value={item.id}>
+                            <MenuItem key={item.id} value={String(item.id)}>
                               {item.name}
                             </MenuItem>
                           ))}
@@ -292,10 +361,13 @@ const RegisterV3 = ({ id }: { id: string }) => {
                         {...field}
                         select
                         fullWidth
-                        value={userData?.roles ? userData.roles[0].id : '0'}
+                        value={field.value ?? ''}
                         onChange={e => {
-                          setUserData({ ...userData, roles: roleList.filter(item => item.id === e.target.value) })
-                          setValue('role', e.target.value)
+                          field.onChange(e.target.value)
+                          setUserData((prev: any) => ({
+                            ...prev,
+                            roles: roleList.filter(item => String(item.id) === String(e.target.value))
+                          }))
                         }}
                         label='Rol'
                         error={Boolean(errors.role)}
@@ -307,7 +379,7 @@ const RegisterV3 = ({ id }: { id: string }) => {
                             (userMethods.isRole('ADMIN') && item.roleEnum != 'SUPERADMIN' && item.roleEnum != 'BIOMEDICAL')
                           ) {
                             return (
-                              <MenuItem key={item.id} value={item.id}>
+                              <MenuItem key={item.id} value={String(item.id)}>
                                 {item.roleEnum}
                               </MenuItem>
                             )
@@ -363,11 +435,14 @@ const RegisterV3 = ({ id }: { id: string }) => {
                       <CustomTextField
                         {...field}
                         fullWidth
-                        disabled={id !== '' ? true : false}
+                        disabled={isEditing}
                         label='Nombre de usuario'
                         placeholder='Mínimo 8 caracteres, solo letras, números y _'
                         error={Boolean(errors.username)}
-                        helperText={errors.username?.message}
+                        helperText={
+                          errors.username?.message ||
+                          (isEditing ? 'El nombre de usuario no se puede modificar' : undefined)
+                        }
                       />
                     )}
                   />
@@ -382,12 +457,15 @@ const RegisterV3 = ({ id }: { id: string }) => {
                       <CustomTextField
                         {...field}
                         fullWidth
-                        disabled={id !== '' ? true : false}
+                        disabled={isEditing}
                         label='Correo electrónico'
                         type='email'
                         placeholder='ejemplo@correo.com'
                         error={Boolean(errors.email)}
-                        helperText={errors.email?.message}
+                        helperText={
+                          errors.email?.message ||
+                          (isEditing ? 'El correo electrónico no se puede modificar' : undefined)
+                        }
                       />
                     )}
                   />
@@ -402,10 +480,13 @@ const RegisterV3 = ({ id }: { id: string }) => {
                       <CustomTextField
                         {...field}
                         fullWidth
-                        label='Contraseña'
+                        label={isEditing ? 'Nueva contraseña (opcional)' : 'Contraseña'}
                         type={isPasswordShown ? 'text' : 'password'}
                         error={Boolean(errors.password)}
-                        helperText={errors.password?.message}
+                        helperText={
+                          errors.password?.message ||
+                          (isEditing ? 'Déjalo vacío para mantener la contraseña actual' : undefined)
+                        }
                         InputProps={{
                           endAdornment: (
                             <InputAdornment position='end'>
@@ -429,7 +510,7 @@ const RegisterV3 = ({ id }: { id: string }) => {
                       <CustomTextField
                         {...field}
                         fullWidth
-                        label='Confirmar contraseña'
+                        label={isEditing ? 'Confirmar nueva contraseña' : 'Confirmar contraseña'}
                         type={isConfirmPasswordShown ? 'text' : 'password'}
                         error={Boolean(errors.confirmPassword)}
                         helperText={errors.confirmPassword?.message}
@@ -448,9 +529,24 @@ const RegisterV3 = ({ id }: { id: string }) => {
                 </Grid>
 
                 {/* Botón de envío */}
-                <Grid item xs={12}>
-                  <Button fullWidth variant='contained' color='primary' type='submit' disabled={isSubmitting} size='large'>
-                    {id ? 'Actualizar' : 'Registrar'}
+                <Grid item xs={12} className='flex gap-4'>
+                  <Button
+                    fullWidth
+                    variant='contained'
+                    color='primary'
+                    type='submit'
+                    disabled={isSubmitting || saving}
+                    size='large'
+                  >
+                    {isEditing ? 'Actualizar' : 'Registrar'}
+                  </Button>
+                  <Button
+                    variant='outlined'
+                    color='secondary'
+                    size='large'
+                    onClick={() => router.push('/accounts/user/list')}
+                  >
+                    Cancelar
                   </Button>
                 </Grid>
               </Grid>
@@ -458,6 +554,51 @@ const RegisterV3 = ({ id }: { id: string }) => {
           )}
         </CardContent>
       </Card>
+
+      {/* Diálogo de confirmación MUI para actualización */}
+      <Dialog
+        open={confirmSaveOpen}
+        onClose={() => !saving && setConfirmSaveOpen(false)}
+        maxWidth='xs'
+        fullWidth
+      >
+        <DialogTitle>Confirmar actualización</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Está seguro de actualizar la información del usuario <strong>{userData?.username}</strong>?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button variant='outlined' color='secondary' disabled={saving} onClick={() => setConfirmSaveOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            variant='contained'
+            color='primary'
+            disabled={saving}
+            onClick={() => pendingSubmitData && executeSave(pendingSubmitData)}
+          >
+            {saving ? 'Guardando...' : 'Confirmar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Notificaciones MUI */}
+      <Snackbar
+        open={feedback.open}
+        autoHideDuration={5000}
+        onClose={() => setFeedback(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setFeedback(prev => ({ ...prev, open: false }))}
+          severity={feedback.severity}
+          variant='filled'
+          sx={{ width: '100%' }}
+        >
+          {feedback.message}
+        </Alert>
+      </Snackbar>
     </div>
   )
 }

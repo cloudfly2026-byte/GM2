@@ -28,6 +28,9 @@ public interface SolicitudRepository extends JpaRepository<Solicitud, Long> {
     // Encontrar solicitudes abiertas por el id del usuario asignado
     List<Solicitud> findByUsuarioAsignadoIdAndStatusDescripcion(Long idUsuario, String estado);
 
+    // Encontrar todas las solicitudes asignadas a un usuario
+    List<Solicitud> findByUsuarioAsignadoId(Long usuarioId);
+
     // Método para obtener las solicitudes del usuario asignado con estado "ABIERTO" y fecha de hoy
     List<Solicitud> findByUsuarioAsignadoIdAndStatusDescripcionAndFecha(Long usuarioId, String estado, String fecha);
 

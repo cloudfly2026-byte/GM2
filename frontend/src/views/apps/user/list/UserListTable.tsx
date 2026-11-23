@@ -7,6 +7,7 @@ import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 
 // MUI Imports
+import Alert from '@mui/material/Alert'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import Button from '@mui/material/Button'
@@ -14,12 +15,15 @@ import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
 import Checkbox from '@mui/material/Checkbox'
 import IconButton from '@mui/material/IconButton'
+import Snackbar from '@mui/material/Snackbar'
+import Tooltip from '@mui/material/Tooltip'
 
 import TablePagination from '@mui/material/TablePagination'
 import type { TextFieldProps } from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
 
 // Third-party Importss
+import axios from 'axios'
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
 import {
@@ -44,6 +48,7 @@ import type { UsersType } from '@/types/apps/userType'
 
 // Component Imports
 import TableFilters from './TableFilters'
+import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog'
 
 // eslint-disable-next-line import/no-unresolved
 import CustomTextField from '@core/components/mui/TextField'
@@ -114,9 +119,70 @@ const UsersListTable = ({ tableData }: { tableData?: UsersType[] }) => {
   // States
   const [addUserOpen, setAddUserOpen] = useState(false)
   const [rowSelection, setRowSelection] = useState({})
-  const [data, setData] = useState(...[tableData])
-  const [filteredData, setFilteredData] = useState(data)
+  const [data, setData] = useState<UsersType[]>(tableData || [])
+  const [filteredData, setFilteredData] = useState<UsersType[]>(tableData || [])
   const [globalFilter, setGlobalFilter] = useState('')
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<UsersType | null>(null)
+  const [feedback, setFeedback] = useState<{
+    open: boolean
+    message: string
+    severity: 'success' | 'error' | 'warning' | 'info'
+  }>({
+    open: false,
+    message: '',
+    severity: 'info'
+  })
+
+  useEffect(() => {
+    setData(tableData || [])
+    setFilteredData(tableData || [])
+  }, [tableData])
+
+  const handleOpenDeleteConfirm = (user: UsersType) => {
+    setUserToDelete(user)
+    setConfirmOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return
+
+    try {
+      const token = localStorage.getItem('AuthToken')
+
+      if (!token) {
+        throw new Error('Token no disponible. Por favor, inicia sesión nuevamente.')
+      }
+
+      const response = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/users/${userToDelete.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const nextData = data.filter(item => item.id !== userToDelete.id)
+      setData(nextData)
+      setFilteredData(prev => prev.filter(item => item.id !== userToDelete.id))
+      setConfirmOpen(false)
+      setUserToDelete(null)
+      setFeedback({
+        open: true,
+        message: response.data?.message || 'Usuario eliminado correctamente.',
+        severity: 'success'
+      })
+    } catch (error: any) {
+      console.error('Error al eliminar usuario:', error)
+      const backendMessage =
+        error?.response?.data?.message || error?.message || 'No se pudo eliminar el usuario.'
+      setConfirmOpen(false)
+      setUserToDelete(null)
+      setFeedback({
+        open: true,
+        message: backendMessage,
+        severity: error?.response?.status === 400 ? 'warning' : 'error'
+      })
+    }
+  }
 
   const columns = useMemo<ColumnDef<UsersTypeWithAction, any>[]>(
     () => [
@@ -200,15 +266,17 @@ const UsersListTable = ({ tableData }: { tableData?: UsersType[] }) => {
         header: 'Action',
         cell: ({ row }) => (
           <div className='flex items-center'>
-            <IconButton>
-              <Link href={'/accounts/user/form/' + row.original.id} className='flex'>
+            <Tooltip title='Editar usuario'>
+              <IconButton component={Link} href={'/accounts/user/form/' + row.original.id}>
                 <i className='tabler-edit text-textSecondary' />
-              </Link>
-            </IconButton>
+              </IconButton>
+            </Tooltip>
 
-            <IconButton onClick={() => setData(data?.filter(product => product.id !== row.original.id))}>
-              <i className='tabler-trash text-textSecondary' />
-            </IconButton>
+            <Tooltip title='Eliminar usuario'>
+              <IconButton onClick={() => handleOpenDeleteConfirm(row.original)}>
+                <i className='tabler-trash text-textSecondary' />
+              </IconButton>
+            </Tooltip>
           </div>
         ),
         enableSorting: false
@@ -360,6 +428,33 @@ const UsersListTable = ({ tableData }: { tableData?: UsersType[] }) => {
         />
       </Card>
 
+      <ConfirmationDialog
+        open={confirmOpen}
+        setOpen={setConfirmOpen}
+        entitYName='Usuario'
+        name={
+          userToDelete
+            ? `${userToDelete.username} (${userToDelete.roles?.map(r => r.roleEnum).join(', ') || 'Sin rol'})`
+            : ''
+        }
+        onConfirmation={handleConfirmDelete}
+      />
+
+      <Snackbar
+        open={feedback.open}
+        autoHideDuration={5000}
+        onClose={() => setFeedback(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setFeedback(prev => ({ ...prev, open: false }))}
+          severity={feedback.severity}
+          variant='filled'
+          sx={{ width: '100%' }}
+        >
+          {feedback.message}
+        </Alert>
+      </Snackbar>
     </>
   )
 }
