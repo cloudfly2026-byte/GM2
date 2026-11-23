@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface VerificationRepository extends JpaRepository<PlantillaVerificacionData, Long> {
     List<PlantillaVerificacionData> findByIdPlantilla(String idPlantilla);
-
+    List<PlantillaVerificacionData> findByEquipment(String equipment);
 }

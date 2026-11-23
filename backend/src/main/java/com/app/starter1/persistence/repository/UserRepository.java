@@ -4,6 +4,7 @@ import com.app.starter1.persistence.entity.RoleEnum;
 import com.app.starter1.persistence.entity.UserEntity;
 import org.springframework.data.repository.CrudRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends CrudRepository<UserEntity,Long> {
@@ -14,6 +15,7 @@ public interface UserRepository extends CrudRepository<UserEntity,Long> {
     boolean existsByEmail(String email);       // Verifica si el email ya existe
     Optional<UserEntity> findByRecoveryToken(String token);
     Optional<UserEntity> findByUsername(String username);
+    List<UserEntity> findByCustomerId(Long customerId);
     long countByCustomerIdAndRoles_RoleEnum(Long customerId, RoleEnum roleEnum);
     long countByRoles_RoleEnum(RoleEnum roleEnum);
 }

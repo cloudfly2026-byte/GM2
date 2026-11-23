@@ -9,9 +9,12 @@ import com.app.starter1.persistence.repository.CustomerRepository;
 import com.app.starter1.persistence.repository.UserRepository;
 import com.app.starter1.persistence.services.ContractService;
 import com.app.starter1.persistence.services.CustomerService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -110,38 +113,74 @@ public class CustomerController {
 
     // UPDATE CUSTOMER
     @PutMapping("/{customerId}")
-    public ResponseEntity<Customer> updateCustomerAndContract(
+    public ResponseEntity<?> updateCustomerAndContract(
             @PathVariable Long customerId,
             @RequestBody Map<String, Object> payload) {
-        // Dividir los datos en cliente y contrato
-        Customer updatedCustomer = new Customer();
-        updatedCustomer.setName((String) payload.get("name"));
-        updatedCustomer.setNit((String) payload.get("nit"));
-        updatedCustomer.setPhone((String) payload.get("phone"));
-        updatedCustomer.setEmail((String) payload.get("email"));
-        updatedCustomer.setAddress((String) payload.get("address"));
-        updatedCustomer.setContact((String) payload.get("contact"));
-        updatedCustomer.setPosition((String) payload.get("position"));
-        updatedCustomer.setType((String) payload.get("type"));
-        updatedCustomer.setStatus(Boolean.valueOf((String) payload.get("status")));
+        try {
+            Customer updatedCustomer = new Customer();
+            updatedCustomer.setName(payload.get("name") != null ? String.valueOf(payload.get("name")) : "");
+            updatedCustomer.setNit(payload.get("nit") != null ? String.valueOf(payload.get("nit")) : null);
+            updatedCustomer.setPhone(payload.get("phone") != null ? String.valueOf(payload.get("phone")) : null);
+            updatedCustomer.setEmail(payload.get("email") != null ? String.valueOf(payload.get("email")) : null);
+            updatedCustomer.setAddress(payload.get("address") != null ? String.valueOf(payload.get("address")) : null);
+            updatedCustomer.setContact(payload.get("contact") != null ? String.valueOf(payload.get("contact")) : null);
+            updatedCustomer.setPosition(payload.get("position") != null ? String.valueOf(payload.get("position")) : null);
+            updatedCustomer.setType(payload.get("type") != null ? String.valueOf(payload.get("type")) : null);
+            updatedCustomer.setStatus(CustomerService.parseStatus(payload.get("status")));
 
-        Contrato updatedContrato = new Contrato();
-        updatedContrato.setFechaInicio(LocalDate.parse((String) payload.get("fechaInicio")));
-        updatedContrato.setFechaFinal(LocalDate.parse((String) payload.get("fechaFinal")));
-        updatedContrato.setDescripcionContrato((String) payload.get("descripcionContrato"));
-        updatedContrato.setEstado("1");
+            Contrato updatedContrato = new Contrato();
+            String fechaInicioStr = payload.get("fechaInicio") != null ? String.valueOf(payload.get("fechaInicio")).trim() : "";
+            String fechaFinalStr = payload.get("fechaFinal") != null ? String.valueOf(payload.get("fechaFinal")).trim() : "";
+            if (!fechaInicioStr.isEmpty()) {
+                updatedContrato.setFechaInicio(LocalDate.parse(fechaInicioStr));
+            }
+            if (!fechaFinalStr.isEmpty()) {
+                updatedContrato.setFechaFinal(LocalDate.parse(fechaFinalStr));
+            }
+            updatedContrato.setDescripcionContrato(
+                    payload.get("descripcionContrato") != null ? String.valueOf(payload.get("descripcionContrato")) : "");
+            updatedContrato.setEstado("1");
 
-        // Actualizar cliente y contrato
-        Customer savedCustomer = customerService.updateCustomerAndContract(customerId, updatedCustomer, updatedContrato);
+            Customer savedCustomer = customerService.updateCustomerAndContract(customerId, updatedCustomer, updatedContrato);
 
-        return ResponseEntity.ok(savedCustomer);
+            return ResponseEntity.ok(Map.of(
+                    "result", "success",
+                    "message", "Cliente actualizado correctamente.",
+                    "cliente", savedCustomer
+            ));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("result", "error", "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("result", "error", "message", "Error al actualizar el cliente: " + e.getMessage()));
+        }
     }
 
-    // DELETE CUSTOMER
+    // DELETE CUSTOMER (en cascada, requiere confirmación de contraseña del usuario autenticado)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCustomer(@PathVariable Long id) {
-        customerService.deleteCustomer(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteCustomer(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> payload,
+            Authentication authentication) {
+        try {
+            String actingUsername = authentication != null ? authentication.getName() : null;
+            String password = payload != null ? payload.get("password") : null;
+            customerService.deleteCustomerWithCascade(id, actingUsername, password);
+            return ResponseEntity.ok(Map.of(
+                    "result", "success",
+                    "message", "Cliente y toda su información relacionada eliminados correctamente."
+            ));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("result", "error", "message", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("result", "error", "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("result", "error", "message", "Error al eliminar el cliente: " + e.getMessage()));
+        }
     }
 
 

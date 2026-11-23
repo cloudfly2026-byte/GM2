@@ -4,6 +4,7 @@
 import { useEffect, useState, useMemo } from 'react'
 
 // MUI Imports
+import Alert from '@mui/material/Alert'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import Button from '@mui/material/Button'
@@ -11,11 +12,15 @@ import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
 import Checkbox from '@mui/material/Checkbox'
 import IconButton from '@mui/material/IconButton'
+import InputAdornment from '@mui/material/InputAdornment'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
+import Snackbar from '@mui/material/Snackbar'
+import TextField from '@mui/material/TextField'
+import Tooltip from '@mui/material/Tooltip'
 import axios from 'axios'
 
 import TablePagination from '@mui/material/TablePagination'
@@ -145,24 +150,69 @@ const CustomersListTable = ({ reload, tableData }: any) => {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [customerToDelete, setCustomerToDelete] = useState<any>(null)
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [feedback, setFeedback] = useState<{
+    open: boolean
+    message: string
+    severity: 'success' | 'error' | 'warning' | 'info'
+  }>({
+    open: false,
+    message: '',
+    severity: 'info'
+  })
 
-  const deleteCustomer = async (id: number | string) => {
+  const closeDeleteDialog = () => {
+    if (deleting) return
+    setDeleteDialogOpen(false)
+    setCustomerToDelete(null)
+    setConfirmPassword('')
+    setShowConfirmPassword(false)
+    setDeleteError(null)
+  }
+
+  const deleteCustomer = async (id: number | string, password: string) => {
+    setDeleting(true)
+    setDeleteError(null)
     try {
       const token = localStorage.getItem('AuthToken')
       if (!token) {
-        throw new Error('No token found')
+        throw new Error('Token no disponible. Por favor, inicia sesión nuevamente.')
       }
-      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/customers/${id}`, {
+
+      const response = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/customers/${id}`, {
+        data: { password },
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         }
       })
+
+      setData(prev => prev.filter(item => item.id !== id))
+      setFilteredData(prev => prev.filter(item => item.id !== id))
       if (reload) {
         reload(true)
       }
-    } catch (error) {
+
+      setFeedback({
+        open: true,
+        message: response.data?.message || 'Cliente y toda su información relacionada eliminados correctamente.',
+        severity: 'success'
+      })
+
+      setDeleteDialogOpen(false)
+      setCustomerToDelete(null)
+      setConfirmPassword('')
+      setShowConfirmPassword(false)
+    } catch (error: any) {
       console.error('Error deleting customer:', error)
+      const backendMessage =
+        error?.response?.data?.message || error?.message || 'No se pudo eliminar el cliente.'
+      setDeleteError(backendMessage)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -257,22 +307,28 @@ const CustomersListTable = ({ reload, tableData }: any) => {
         header: 'Action',
         cell: ({ row }) => (
           <div className='flex items-center'>
-            <IconButton
-              onClick={() => {
-                setCustomerToDelete(row.original)
-                setDeleteDialogOpen(true)
-              }}
-            >
-              <i className='tabler-trash text-textSecondary' />
-            </IconButton>
-            <IconButton
-              onClick={() => {
-                setRowSelection(row.original)
-                setOpenForm(true)
-              }}
-            >
-              <i className='tabler-edit text-textSecondary' />
-            </IconButton>
+            <Tooltip title='Eliminar cliente'>
+              <IconButton
+                onClick={() => {
+                  setCustomerToDelete(row.original)
+                  setConfirmPassword('')
+                  setDeleteError(null)
+                  setDeleteDialogOpen(true)
+                }}
+              >
+                <i className='tabler-trash text-textSecondary' />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title='Editar cliente'>
+              <IconButton
+                onClick={() => {
+                  setRowSelection(row.original)
+                  setOpenForm(true)
+                }}
+              >
+                <i className='tabler-edit text-textSecondary' />
+              </IconButton>
+            </Tooltip>
           </div>
         ),
         enableSorting: false
@@ -283,7 +339,8 @@ const CustomersListTable = ({ reload, tableData }: any) => {
   )
 
   useEffect(() => {
-    setData(tableData)
+    setData(tableData || [])
+    setFilteredData(tableData || [])
   }, [tableData])
 
   const table = useReactTable({
@@ -489,38 +546,83 @@ const CustomersListTable = ({ reload, tableData }: any) => {
 
       <Dialog
         open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        onClose={closeDeleteDialog}
         aria-labelledby='alert-dialog-title'
         aria-describedby='alert-dialog-description'
+        maxWidth='sm'
+        fullWidth
       >
-        <DialogTitle id='alert-dialog-title'>
-          {"¿Confirmar eliminación?"}
-        </DialogTitle>
+        <DialogTitle id='alert-dialog-title'>Confirmar eliminación definitiva de cliente</DialogTitle>
         <DialogContent>
-          <DialogContentText id='alert-dialog-description'>
-            ¿Estás seguro de que deseas eliminar al cliente {customerToDelete?.name}? Esta acción no se puede deshacer.
+          <Alert severity='warning' sx={{ mb: 3, mt: 1 }}>
+            Esta acción eliminará al cliente <strong>{customerToDelete?.name}</strong> y{' '}
+            <strong>toda su información relacionada</strong> (usuarios, equipos, contratos, solicitudes, reportes,
+            cronogramas y documentos). Esta acción no se puede deshacer.
+          </Alert>
+          <DialogContentText id='alert-dialog-description' sx={{ mb: 2 }}>
+            Por seguridad, ingresa nuevamente tu contraseña de usuario para confirmar la eliminación:
           </DialogContentText>
+          <TextField
+            fullWidth
+            label='Contraseña actual'
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={e => {
+              setConfirmPassword(e.target.value)
+              if (deleteError) setDeleteError(null)
+            }}
+            disabled={deleting}
+            autoFocus
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position='end'>
+                  <Button size='small' onClick={() => setShowConfirmPassword(prev => !prev)}>
+                    {showConfirmPassword ? 'Ocultar' : 'Mostrar'}
+                  </Button>
+                </InputAdornment>
+              )
+            }}
+          />
+          {deleteError && (
+            <Alert severity='error' sx={{ mt: 2 }}>
+              {deleteError}
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} color='secondary'>
+          <Button onClick={closeDeleteDialog} color='secondary' variant='outlined' disabled={deleting}>
             Cancelar
           </Button>
           <Button
             onClick={async () => {
-              if (customerToDelete) {
-                await deleteCustomer(customerToDelete.id)
-                setDeleteDialogOpen(false)
-                setCustomerToDelete(null)
+              if (customerToDelete && confirmPassword.trim()) {
+                await deleteCustomer(customerToDelete.id, confirmPassword)
               }
             }}
             color='error'
             variant='contained'
-            autoFocus
+            disabled={deleting || !confirmPassword.trim()}
           >
-            Eliminar
+            {deleting ? 'Eliminando...' : 'Eliminar definitivamente'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={feedback.open}
+        autoHideDuration={5000}
+        onClose={() => setFeedback(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setFeedback(prev => ({ ...prev, open: false }))}
+          severity={feedback.severity}
+          variant='filled'
+          sx={{ width: '100%' }}
+        >
+          {feedback.message}
+        </Alert>
+      </Snackbar>
     </>
   )
 }
