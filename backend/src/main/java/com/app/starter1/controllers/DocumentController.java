@@ -77,7 +77,7 @@ public class DocumentController {
     public ResponseEntity<List<Document>> saveDocument(DocumentRequest documentRequest)  {
 
 
-        String path = documentStorageService.Store(documentRequest.getFile());
+        String path = documentStorageService.Store(documentRequest.getFile(), documentRequest.getProduct_id());
         Document document = new Document();
         // Establecer la fecha formateada
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MM-dd-yy");

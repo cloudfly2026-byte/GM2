@@ -34,6 +34,10 @@ public class DocumentStorageService implements StorageFileService{
 
     @Override
     public String Store(MultipartFile file) {
+        return Store(file, null);
+    }
+
+    public String Store(MultipartFile file, Long productId) {
         try {
             if (file.isEmpty()) {
                 throw new IllegalArgumentException("No se ha proporcionado ningún archivo.");
@@ -46,8 +50,13 @@ public class DocumentStorageService implements StorageFileService{
             }
             String sanitizedFilename = originalFilename.replaceAll("\\s+", "_");
 
+            // Anteponer el ID del producto como prefijo para evitar colisiones entre equipos
+            String finalFilename = (productId != null && productId > 0)
+                    ? productId + "_" + sanitizedFilename
+                    : sanitizedFilename;
+
             // Construir la ruta de destino
-            Path destinationFile = rootLocation.resolve(Paths.get(sanitizedFilename))
+            Path destinationFile = rootLocation.resolve(Paths.get(finalFilename))
                     .normalize().toAbsolutePath();
 
             // Copiar el archivo al almacenamiento
@@ -55,7 +64,7 @@ public class DocumentStorageService implements StorageFileService{
                 Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
             }
 
-            return sanitizedFilename;
+            return finalFilename;
 
         } catch (IOException e) {
             throw new RuntimeException("Error al cargar el archivo. Asegúrate de que el archivo sea accesible.", e);
