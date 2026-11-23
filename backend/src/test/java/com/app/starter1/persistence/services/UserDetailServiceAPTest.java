@@ -1,5 +1,6 @@
 package com.app.starter1.persistence.services;
 
+import com.app.starter1.dto.LoginRequest;
 import com.app.starter1.dto.UserCreateUpdateRequest;
 import com.app.starter1.persistence.entity.Customer;
 import com.app.starter1.persistence.entity.RoleEntity;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -324,5 +326,36 @@ class UserDetailServiceAPTest {
         assertThrows(IllegalArgumentException.class,
                 () -> userService.deleteUser(1L, "ingenieria"));
         verify(userRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Bloquea login si la empresa (Customer) del usuario está inactiva con mensaje 'Cuenta desactivada'")
+    void loginUser_whenCustomerInactive_throwsCuentaDesactivada() {
+        Customer inactiveCompany = Customer.builder().id(88L).name("Empresa Inactiva").status(false).build();
+        RoleEntity roleUserWithPerms = RoleEntity.builder()
+                .id(4L)
+                .roleEnum(RoleEnum.USER)
+                .permissionList(new HashSet<>())
+                .build();
+
+        UserEntity user = UserEntity.builder()
+                .id(77L)
+                .username("user_inactivo")
+                .password("$2a$10$hash")
+                .isEnabled(true)
+                .accountNoExpired(true)
+                .accountNoLocked(true)
+                .credentialNoExpired(true)
+                .roles(new HashSet<>(Set.of(roleUserWithPerms)))
+                .customer(inactiveCompany)
+                .build();
+
+        when(userRepository.findUserEntityByUsername("user_inactivo")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("Clave123!", "$2a$10$hash")).thenReturn(true);
+        when(userRepository.findByUsername("user_inactivo")).thenReturn(Optional.of(user));
+
+        DisabledException ex = assertThrows(DisabledException.class,
+                () -> userService.loginUser(new LoginRequest("user_inactivo", "Clave123!")));
+        assertEquals("Cuenta desactivada", ex.getMessage());
     }
 }

@@ -73,7 +73,7 @@ public class CustomerController {
                 .contact(form.getContact())
                 .position(form.getPosition())
                 .type(form.getType())
-                .status(form.getStatus() != null ? Boolean.valueOf(form.getStatus()) : null)
+                .status(form.getStatus() != null ? CustomerService.parseStatus(form.getStatus()) : Boolean.TRUE)
                 .build();
 
         ClienteContratoRequest contratoRequest = new ClienteContratoRequest();

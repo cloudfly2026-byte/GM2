@@ -57,6 +57,9 @@ public class Customer {
         if (this.dateRegister == null) {
             this.dateRegister = LocalDate.now();
         }
+        if (this.status == null) {
+            this.status = true;
+        }
     }
 
 

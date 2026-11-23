@@ -101,7 +101,7 @@ public class CustomerService {
                 .contact(request.getContact())
                 .position(request.getPosition())
                 .type(request.getType())
-                .status(request.getStatus() == 1)
+                .status(request.getStatus() == null || request.getStatus() == 1)
                 .build();
 
         return customerRepository.save(customer);

@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -285,18 +286,23 @@ public class UserDetailServiceAP implements UserDetailsService {
 
                 // Intentamos autenticar al usuario
                 Authentication authentication = this.authenticate(username, password);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                String accessToken = jwtUtils.CreateToken(authentication);
 
                 // Buscamos el usuario en la base de datos
                 Optional<UserEntity> userEntityOptional = userRepository.findByUsername(username);
 
-                // Si no se encuentra el usuario, lanzamos BadCredentialsException con mensaje
-                // adecuado
                 UserEntity userEntity = userEntityOptional
                                 .orElseThrow(() -> new BadCredentialsException(
                                                 "The username " + username + " not exists!"));
+
+                // Bloquear acceso si el usuario o su empresa (Customer) está inactivo
+                if (!userEntity.isEnabled()
+                                || (userEntity.getCustomer() != null && Boolean.FALSE.equals(userEntity.getCustomer().getStatus()))) {
+                        throw new DisabledException("Cuenta desactivada");
+                }
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                String accessToken = jwtUtils.CreateToken(authentication);
 
                 // Devolvemos la respuesta con el usuario y el token
                 AuthResponse authResponse = new AuthResponse(username, "User logged in successfully", accessToken, true,

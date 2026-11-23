@@ -1,5 +1,6 @@
 package com.app.starter1.persistence.services;
 
+import com.app.starter1.dto.ClienteContratoRequest;
 import com.app.starter1.persistence.entity.*;
 import com.app.starter1.persistence.repository.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,6 +91,19 @@ class CustomerServiceTest {
                 .customer(actingCustomer)
                 .roles(new HashSet<>(Set.of(roleSuperAdmin)))
                 .build();
+    }
+
+    @Test
+    @DisplayName("createCustomer crea el cliente activo por defecto cuando status es null o 1")
+    void createCustomer_defaultsToActive() {
+        ClienteContratoRequest req = new ClienteContratoRequest();
+        req.setName("Empresa Nueva");
+        req.setStatus(null);
+
+        when(customerRepository.save(any(Customer.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Customer created = customerService.createCustomer(req);
+        assertEquals(Boolean.TRUE, created.getStatus());
     }
 
     @Test

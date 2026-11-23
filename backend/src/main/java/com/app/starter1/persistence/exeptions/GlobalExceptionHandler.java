@@ -4,6 +4,7 @@ import com.app.starter1.persistence.exeptions.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -16,6 +17,13 @@ public class GlobalExceptionHandler {
         // Respuesta personalizada en formato JSON
         ErrorResponse errorResponse = new ErrorResponse("Authentication failed", ex.getMessage());
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+    }
+
+    // Captura la excepción DisabledException (cuenta o empresa desactivada)
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<Object> handleDisabledException(DisabledException ex) {
+        ErrorResponse errorResponse = new ErrorResponse("Account disabled", ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
 
     // Captura cualquier otra excepción y devuelve un error genérico
